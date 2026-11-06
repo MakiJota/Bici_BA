@@ -1,0 +1,26 @@
+# Legacy R project (2022-23): local reference only, ~4.5 GB of raw data / .RData.
+# Reviewed in docs/00_legacy_review.md; nothing from it is versioned.
+Eco_bici/
+00_eco_bici_legacy/
+*.RData
+.Rhistory
+.Rproj.user/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Raw and intermediate data are reproducible via pipeline/ and too large for git
+data/raw/
+data/interim/
+*.part
+
+# Large processed tables (row-level trips). Aggregates are kept.
+data/processed/trips_clean.parquet
+data/processed/trip_routes.parquet
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

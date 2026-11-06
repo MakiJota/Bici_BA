@@ -57,5 +57,13 @@ MIN_DURATION_S = 60            # under 1 minute: dock tests / immediate returns
 MAX_DURATION_S = 4 * 3600      # over 4 hours: lost bikes / unreturned
 MAX_SPEED_KMH = 35             # estimated route speed above this is implausible
 
-# Privacy: never publish a demographic cell with fewer trips than this.
+# Privacy safeguards for demographic data
+#  * MIN_PUBLISH: in published demographic cubes, a cell with fewer trips is
+#    recoded to the category "suppressed" (totals stay correct).
+#  * MIN_CELL: any demographic figure shown in the report or computed in the
+#    browser from fewer trips is displayed as "n < MIN_CELL".
+MIN_PUBLISH = 10
 MIN_CELL = 30
+
+# Hour bands used by the browser cubes: [start, end)
+HOUR_BANDS = [(0, 7), (7, 10), (10, 14), (14, 17), (17, 20), (20, 24)]

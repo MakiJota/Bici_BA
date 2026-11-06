@@ -1,0 +1,41 @@
+{
+  "period": [
+    "2025-01-01",
+    "2025-12-31"
+  ],
+  "total_trips": 3148375,
+  "days": 365,
+  "avg_daily_trips": 8625.7,
+  "active_stations": 403,
+  "origin_stations": 403,
+  "destination_stations": 403,
+  "duration_mean_min": 21.33,
+  "duration_median_min": 16.12,
+  "distance_mean_km": 2.949,
+  "distance_median_km": 2.47,
+  "speed_mean_kmh": 10.39,
+  "speed_median_kmh": 10.63,
+  "round_trips": 274146,
+  "round_trip_share": 0.0871,
+  "routed_trips": 2874229,
+  "speed_implausible_trips": 665,
+  "speed_below_3kmh_share": 0.0591,
+  "same_comuna_share": 0.4863,
+  "different_comuna_share": 0.5137,
+  "same_barrio_share": 0.3137,
+  "peak_hour": 17,
+  "weekday_am_peak_hour": 8,
+  "weekday_pm_peak_hour": 17,
+  "weekend_share": 0.1447,
+  "busiest_month": 10,
+  "quietest_month": 6,
+  "gender_share": {
+    "MALE": 0.6164,
+    "FEMALE": 0.3232,
+    "OTHER": 0.0577,
+    "UNKNOWN": 0.0027
+  },
+  "age_known_share": 0.9363,
+  "min_cell": 30,
+  "max_speed_kmh": 35
+}

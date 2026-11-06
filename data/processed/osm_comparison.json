@@ -1,0 +1,19 @@
+{
+  "n_pairs": 500,
+  "osm_retrieved": "Overpass API via OSMnx 2.1.1",
+  "osm_nodes": 27112,
+  "osm_edges": 58113,
+  "status": "ok",
+  "pairs_routed": 493,
+  "median_ratio_osm_to_official_shortest": 1.018,
+  "median_ratio_osm_to_official_infra": 0.995,
+  "p10_p90_ratio_osm_to_shortest": [
+    0.975,
+    1.334
+  ],
+  "trip_weighted_dist_m": {
+    "osm_bike": 1631.9,
+    "official_shortest": 1512.2,
+    "official_infra": 1620.2
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "year": 2025,
+  "raw_rows": 3156182,
+  "raw_columns": [
+    "id_recorrido",
+    "duracion_recorrido",
+    "fecha_origen_recorrido",
+    "id_estacion_origen",
+    "nombre_estacion_origen",
+    "direccion_estacion_origen",
+    "long_estacion_origen",
+    "lat_estacion_origen",
+    "fecha_destino_recorrido",
+    "id_estacion_destino",
+    "nombre_estacion_destino",
+    "direccion_estacion_destino",
+    "long_estacion_destino",
+    "lat_estacion_destino",
+    "id_usuario",
+    "modelo_bicicleta",
+    "genero"
+  ],
+  "station_refs": 6312363,
+  "station_refs_bad_coords": 222,
+  "stations": 403,
+  "stations_multiple_coords": 19,
+  "stations_moved_over_100m": 14,
+  "flags": {
+    "missing_origin": 0,
+    "missing_dest": 1,
+    "unknown_station": 176,
+    "missing_time": 0,
+    "end_before_start": 0,
+    "duration_mismatch": 8,
+    "too_short": 0,
+    "too_long": 7779,
+    "outside_year": 0,
+    "duplicate_id": 0,
+    "duplicate_logical": 0
+  },
+  "round_trips": 275733,
+  "valid_trips": 3148375,
+  "excluded_trips": 7807,
+  "duration_raw_summary_s": {
+    "count": 3156182.0,
+    "mean": 1377.9259595929511,
+    "std": 5719.877112058524,
+    "min": 61.0,
+    "1%": 125.0,
+    "50%": 969.0,
+    "99%": 6686.0,
+    "max": 2481476.0
+  },
+  "gender_counts": {
+    "MALE": 1944994,
+    "FEMALE": 1020532,
+    "OTHER": 182055,
+    "nan": 8601
+  },
+  "user_records": 1098439,
+  "user_ids_in_several_files": 27722,
+  "age_join_rate": 0.9369,
+  "age_implausible": 1690,
+  "age_available_share": 0.9364,
+  "age_group_counts": {
+    "16-24": 724197,
+    "25-34": 876932,
+    "35-44": 653853,
+    "45-54": 421393,
+    "55-64": 208944,
+    "65+": 70036,
+    "nan": 200827
+  },
+  "valid_period": [
+    "2025-01-01 00:01:40",
+    "2025-12-31 23:58:28"
+  ],
+  "active_days": 365,
+  "active_stations": 403
+}

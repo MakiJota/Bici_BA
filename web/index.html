@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bici BA · Movilidad</title>
+  <meta name="description" content="Explorador de movilidad en bicicleta pública de Buenos Aires — Buenos Aires bike-sharing mobility explorer">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='9' cy='21' r='6' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3Ccircle cx='23' cy='21' r='6' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3Cpath d='M9 21l5-10h7l2 10M14 11l-2-3' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">◐</span>
+      <div>
+        <h1 data-i18n="title">Bici BA</h1>
+        <p class="subtitle" data-i18n="subtitle">Movilidad en bicicleta pública · 2025</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" class="tab active" data-view="map" data-i18n="nav_map">Mapa de movilidad</button>
+      <button role="tab" class="tab" data-view="report" data-i18n="nav_report">Informe de movilidad</button>
+      <button role="tab" class="tab" data-view="method" data-i18n="nav_method">Metodología</button>
+    </nav>
+    <div class="lang" role="group" aria-label="Idioma / Language">
+      <button class="lang-btn active" data-lang="es">ES</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <!-- ===================== Shared filters ===================== -->
+  <aside class="filters" id="filters">
+    <button class="filters-toggle" id="filtersToggle" data-i18n="filters">Filtros</button>
+    <div class="filters-body">
+      <div class="fgroup">
+        <label data-i18n="f_period">Período (meses)</label>
+        <div class="row">
+          <select id="fMonthFrom" aria-label="from"></select>
+          <span class="dash">–</span>
+          <select id="fMonthTo" aria-label="to"></select>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_daytype">Tipo de día</label>
+        <div class="seg" id="fDaytype">
+          <button data-v="all" class="on" data-i18n="all">Todos</button>
+          <button data-v="wd" data-i18n="weekday">Laborables</button>
+          <button data-v="we" data-i18n="weekend">Fin de semana</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_hours">Franja horaria</label>
+        <div class="chips" id="fHours"></div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_level">Nivel geográfico</label>
+        <div class="seg" id="fLevel">
+          <button data-v="station" data-i18n="lvl_station">Estaciones</button>
+          <button data-v="barrio" data-i18n="lvl_barrio">Barrios</button>
+          <button data-v="comuna" class="on" data-i18n="lvl_comuna">Comunas</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_area">Ámbito (origen o destino)</label>
+        <select id="fArea"></select>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_origin">Origen</label>
+        <select id="fOrigin"></select>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_dest">Destino</label>
+        <select id="fDest"></select>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_gender">Género (registrado)</label>
+        <select id="fGender"></select>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="f_age">Grupo de edad</label>
+        <select id="fAge"></select>
+      </div>
+      <p class="fnote" id="fNote"></p>
+      <button class="reset" id="fReset" data-i18n="reset">Restablecer filtros</button>
+      <p class="sample" id="fSample"></p>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ===================== Section A: Map ===================== -->
+    <section class="view active" id="view-map">
+      <div id="map" role="region" aria-label="map"></div>
+      <div class="map-panel" id="layers">
+        <h3 data-i18n="layers">Capas</h3>
+        <label><input type="checkbox" data-layer="stations" checked> <span data-i18n="ly_stations">Estaciones</span></label>
+        <label><input type="checkbox" data-layer="od" checked> <span data-i18n="ly_od">Viajes OD</span></label>
+        <label><input type="checkbox" data-layer="routes" checked> <span data-i18n="ly_routes">Rutas</span></label>
+        <label><input type="checkbox" data-layer="streets"> <span data-i18n="ly_streets">Intensidad vial</span></label>
+        <label><input type="checkbox" data-layer="barrios"> <span data-i18n="ly_barrios">Barrios</span></label>
+        <label><input type="checkbox" data-layer="comunas" checked> <span data-i18n="ly_comunas">Comunas</span></label>
+        <label><input type="checkbox" data-layer="infra"> <span data-i18n="ly_infra">Infraestructura ciclista</span></label>
+        <div class="sub">
+          <label data-i18n="topn">Flujos principales</label>
+          <div class="seg small" id="fTopN">
+            <button data-v="10">10</button><button data-v="20" class="on">20</button><button data-v="50">50</button>
+          </div>
+          <label class="inline"><input type="checkbox" id="fLabels"> <span data-i18n="show_labels">Mostrar cantidades</span></label>
+          <label data-i18n="strategy">Supuesto de ruteo</label>
+          <div class="seg small" id="fStrategy">
+            <button data-v="i" class="on" data-i18n="st_infra">Prioriza ciclovías</button>
+            <button data-v="s" data-i18n="st_short">Más corta</button>
+          </div>
+        </div>
+        <p class="legend" id="legend"></p>
+      </div>
+      <div class="detail" id="detail" hidden>
+        <button class="close" id="detailClose" aria-label="close">×</button>
+        <div id="detailBody"></div>
+      </div>
+      <p class="disclaimer" data-i18n="routes_disclaimer">Las rutas son reconstrucciones plausibles sobre la red vial, no trayectorias GPS.</p>
+    </section>
+
+    <!-- ===================== Section B: Report ===================== -->
+    <section class="view" id="view-report">
+      <div class="report">
+        <nav class="toc">
+          <a href="#rA" data-i18n="rA">A · Panorama general</a>
+          <a href="#rB" data-i18n="rB">B · Relaciones territoriales</a>
+          <a href="#rC" data-i18n="rC">C · Distribución temporal</a>
+          <a href="#rD" data-i18n="rD">D · Características de los usuarios</a>
+          <a href="#rE" data-i18n="rE">E · Distancia, duración y velocidad</a>
+          <a href="#rF" data-i18n="rF">F · Estaciones y calles</a>
+        </nav>
+        <article>
+          <section id="rA"><h2 data-i18n="rA">A · Panorama general</h2><p class="period" id="periodLine"></p><div class="kpis" id="kpis"></div></section>
+          <section id="rB">
+            <h2 data-i18n="rB">B · Relaciones territoriales</h2>
+            <p class="lead" data-i18n="rB_lead"></p>
+            <div class="grid2"><div class="chart tall" id="cTopOD"></div><div class="chart tall" id="cSankey"></div></div>
+            <div class="grid2"><div class="chart tall" id="cODHeat"></div><div class="chart tall" id="cInOut"></div></div>
+            <div class="chart" id="cInternal"></div>
+          </section>
+          <section id="rC">
+            <h2 data-i18n="rC">C · Distribución temporal</h2>
+            <p class="lead" data-i18n="rC_lead"></p>
+            <div class="grid2"><div class="chart" id="cHour"></div><div class="chart" id="cDow"></div></div>
+            <div class="grid2"><div class="chart" id="cMonth"></div><div class="chart" id="cHeatHD"></div></div>
+            <div class="chart" id="cDaily"></div>
+            <div class="compare">
+              <h3 data-i18n="compare">Comparar períodos</h3>
+              <div class="row">
+                <span>A</span><select id="cmpA1"></select>–<select id="cmpA2"></select>
+                <span>B</span><select id="cmpB1"></select>–<select id="cmpB2"></select>
+              </div>
+              <div class="chart" id="cCompare"></div>
+            </div>
+          </section>
+          <section id="rD">
+            <h2 data-i18n="rD">D · Características de los usuarios</h2>
+            <div class="note" id="userAvail"></div>
+            <div class="grid2"><div class="chart" id="cGender"></div><div class="chart" id="cAge"></div></div>
+            <div class="grid2"><div class="chart" id="cGenderHour"></div><div class="chart" id="cDemoDDS"></div></div>
+            <div class="table-wrap" id="tDemo"></div>
+          </section>
+          <section id="rE">
+            <h2 data-i18n="rE">E · Distancia, duración y velocidad</h2>
+            <p class="lead" data-i18n="rE_lead"></p>
+            <div class="row controls"><label data-i18n="compare_by">Comparar por</label>
+              <select id="ddsGroup"></select>
+              <select id="ddsVar"></select></div>
+            <div class="grid2"><div class="chart" id="cDDS"></div><div class="chart" id="cDistHist"></div></div>
+            <div class="table-wrap" id="tDDS"></div>
+          </section>
+          <section id="rF">
+            <h2 data-i18n="rF">F · Estaciones y calles</h2>
+            <div class="grid2"><div class="chart tall" id="cStTop"></div><div class="chart tall" id="cStNet"></div></div>
+            <div class="grid2"><div class="chart tall" id="cStDepArr"></div><div class="chart tall" id="cStreets"></div></div>
+          </section>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===================== Methodology ===================== -->
+    <section class="view" id="view-method"><article class="method" id="methodBody"></article></section>
+  </main>
+
+  <div class="loading" id="loading"><div class="spinner"></div><p data-i18n="loading">Cargando datos…</p></div>
+  <footer class="foot" id="foot"></footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

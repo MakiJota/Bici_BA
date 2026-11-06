@@ -37,7 +37,7 @@ Shared plotting style and loaders are in `_style.py` (monochrome palette).
 ![Gender](figures/03_gender_hourly.png)
 
 **Distance, duration, speed** (estimated, from inferred routes)
-- Median duration 16.1 min (p25–p75: 9.8–26.4); median estimated network distance 2.5 km; median estimated speed 10.6 km/h.
+- Median duration 16.1 min (p25–p75: 9.7–26.4); median estimated network distance 2.5 km; median estimated speed 10.6 km/h.
 - Weekend trips are longer (median 2.9 vs 2.4 km) and slower (8.6 vs 10.9 km/h), which is consistent with leisure riding.
 - 665 trips imply over 35 km/h on the inferred route and are excluded from distance and speed statistics.
 

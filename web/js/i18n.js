@@ -1,0 +1,156 @@
+// Spanish (default) and English strings. Geographic names are never translated.
+const STR = {
+  es: {
+    title: "Bici BA", subtitle: "Movilidad en bicicleta pública · Buenos Aires 2025",
+    nav_map: "Mapa de movilidad", nav_report: "Informe de movilidad", nav_method: "Metodología",
+    filters: "Filtros", loading: "Cargando datos…",
+    f_period: "Período (meses)", f_daytype: "Tipo de día", f_hours: "Franja horaria", f_level: "Nivel geográfico",
+    f_area: "Ámbito (origen o destino)", f_origin: "Origen", f_dest: "Destino",
+    f_gender: "Género (registrado)", f_age: "Grupo de edad",
+    all: "Todos", any: "— Todos —", weekday: "Laborables", weekend: "Fin de semana",
+    lvl_station: "Estaciones", lvl_barrio: "Barrios", lvl_comuna: "Comunas",
+    reset: "Restablecer filtros",
+    layers: "Capas", ly_stations: "Estaciones", ly_od: "Viajes OD", ly_routes: "Rutas", ly_streets: "Intensidad vial",
+    ly_barrios: "Barrios", ly_comunas: "Comunas", ly_infra: "Infraestructura ciclista",
+    topn: "Flujos principales", show_labels: "Mostrar cantidades", strategy: "Supuesto de ruteo",
+    st_infra: "Prioriza ciclovías", st_short: "Más corta",
+    routes_disclaimer: "Las rutas son reconstrucciones plausibles sobre la red vial, no trayectorias GPS.",
+    rA: "A · Panorama general", rB: "B · Relaciones territoriales", rC: "C · Distribución temporal",
+    rD: "D · Características de los usuarios", rE: "E · Distancia, duración y velocidad", rF: "F · Estaciones y calles",
+    rB_lead: "Viajes observados entre unidades territoriales (origen → destino). Cambie el nivel geográfico en los filtros.",
+    rC_lead: "Hora de salida de cada viaje. Los gráficos responden al período, tipo de día, franja horaria y a la comuna de origen o ámbito.",
+    rE_lead: "Duración observada; distancia estimada sobre la red (ruta inferida que prioriza ciclovías); velocidad = distancia estimada / duración observada. No son mediciones GPS.",
+    compare: "Comparar períodos", compare_by: "Comparar por",
+    sample: (n) => `n = ${n} viajes`,
+    k_trips: "Viajes", k_daily: "Viajes por día (promedio)", k_active: "Estaciones activas", k_orig: "Estaciones de origen",
+    k_dest: "Estaciones de destino", k_dur_mean: "Duración media", k_dur_med: "Duración mediana",
+    k_dist: "Distancia media estimada", k_speed: "Velocidad media estimada", k_same: "Dentro de la misma comuna",
+    k_diff: "Entre comunas distintas", k_round: "Viajes circulares (misma estación)",
+    k_note_static: "anual, sin filtros", k_note_ratio: "distancia total / tiempo total",
+    period_line: (a, b, n, d) => `Período seleccionado: ${a} – ${b} · ${d} días · muestra: ${n} viajes válidos.`,
+    min: "min", km: "km", kmh: "km/h", trips: "viajes", share: "% del total",
+    departures: "Salidas", arrivals: "Llegadas", total: "Total", net: "Flujo neto (llegadas − salidas)",
+    top_dest: "Destinos más frecuentes", top_orig: "Orígenes más frecuentes", temporal: "Distribución temporal",
+    hour: "Hora", weekday_short: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+    months: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+    c_topod: "20 relaciones direccionales principales", c_sankey: "Flujos principales (Sankey)",
+    c_odheat: "Matriz origen–destino", c_inout: "Salidas y llegadas por unidad", c_internal: "Viajes internos y entre unidades",
+    internal: "Internos", external_out: "Salen hacia otra unidad", external_in: "Llegan desde otra unidad",
+    c_hour: "Viajes por hora de salida", c_dow: "Viajes por día de la semana (promedio diario)",
+    c_month: "Promedio diario por mes", c_heathd: "Hora × día de la semana (promedio)", c_daily: "Viajes diarios",
+    c_compare: "Perfil horario: período A vs B (promedio diario)",
+    c_gender: "Viajes por género registrado", c_age: "Viajes por grupo de edad", c_genderhour: "Perfil horario por género (% de cada grupo)",
+    c_demodds: "Duración y distancia media por grupo (filtros actuales)",
+    c_dds: "Distribución por grupo (p25 · mediana · p75)", c_disthist: "Distancia estimada (filtros actuales)",
+    c_sttop: "Estaciones más utilizadas", c_stnet: "Mayores entradas y salidas netas", c_stdeparr: "Estaciones con más salidas y llegadas",
+    c_streets: "Calles con mayor intensidad inferida",
+    avg_daily: "Promedio diario", trips_per_day: "viajes por día", period: "Período",
+    user_avail: (g, a) => `<b>Atributos presentes en los datos originales.</b> Género: registrado en cada viaje (${g} con valor). Edad: no figura en el archivo de viajes; se obtuvo de los archivos anuales de usuarios 2015–2025 para el ${a} de los viajes (edad al registrarse + años transcurridos). No se infieren atributos faltantes y las categorías de género no son exhaustivas. Se ocultan los grupos con menos de 30 viajes; en los cubos publicados, las celdas con menos de 10 viajes se recodifican como "suprimido".`,
+    demo_one: "Por privacidad, el filtro de género y el de edad no se combinan: al elegir uno se restablece el otro.",
+    demo_level: "Con un filtro demográfico, los flujos se calculan a nivel de comuna (no se publican datos demográficos por estación o barrio).",
+    demo_time: "Los gráficos horarios no se desagregan por género o edad en esta sección; ver sección D.",
+    suppressed: "suprimido", unknown: "sin dato", n_lt: (m) => `n < ${m}`,
+    g_MALE: "Masculino", g_FEMALE: "Femenino", g_OTHER: "Otro", g_UNKNOWN: "Sin dato", g_suppressed: "Suprimido",
+    grp_all: "Total", grp_comuna: "Comuna de origen", grp_barrio: "Barrio de origen", grp_gender: "Género", grp_age_group: "Grupo de edad",
+    grp_daytype: "Tipo de día", grp_hour: "Hora de salida", grp_bike_model: "Modelo de bicicleta",
+    var_duration_min: "Duración (min)", var_distance_km: "Distancia estimada (km)", var_speed_kmh: "Velocidad estimada (km/h)",
+    col_group: "Grupo", col_n: "Viajes", col_mean: "Media", col_p25: "p25", col_median: "Mediana", col_p75: "p75",
+    street: "Calle", inferred_trips: "Viajes inferidos", share_routed: "Participación en viajes reconstruidos",
+    infra_yes: "Con ciclovía", infra_no: "Sin ciclovía", infra: "Infraestructura", by_band: "Por franja horaria", by_month: "Por mes",
+    strategy_note_short: "Supuesto 'más corta': intensidad anual sin filtros temporales.",
+    legend_streets: "Grosor = viajes inferidos", legend_od: "Grosor = viajes; flecha = sentido", legend_st: "Tamaño = salidas + llegadas",
+    unit_internal: "internos", click_hint: "Haga clic en una estación, calle o unidad territorial.",
+    route_to: "Rutas reconstruidas hacia los destinos principales", selected_pair: "Par seleccionado",
+    no_data: "Sin viajes con los filtros actuales.",
+    station: "Estación", barrio: "Barrio", comuna: "Comuna",
+  },
+  en: {
+    title: "Bici BA", subtitle: "Public bike-sharing mobility · Buenos Aires 2025",
+    nav_map: "Mobility map", nav_report: "Mobility report", nav_method: "Methodology",
+    filters: "Filters", loading: "Loading data…",
+    f_period: "Period (months)", f_daytype: "Day type", f_hours: "Time of day", f_level: "Geographic level",
+    f_area: "Area (origin or destination)", f_origin: "Origin", f_dest: "Destination",
+    f_gender: "Gender (as recorded)", f_age: "Age group",
+    all: "All", any: "— All —", weekday: "Weekdays", weekend: "Weekend",
+    lvl_station: "Stations", lvl_barrio: "Neighborhoods", lvl_comuna: "Communes",
+    reset: "Reset filters",
+    layers: "Layers", ly_stations: "Stations", ly_od: "OD trips", ly_routes: "Routes", ly_streets: "Street intensity",
+    ly_barrios: "Neighborhoods", ly_comunas: "Communes", ly_infra: "Cycling infrastructure",
+    topn: "Strongest flows", show_labels: "Show counts", strategy: "Routing assumption",
+    st_infra: "Prefers bike lanes", st_short: "Shortest",
+    routes_disclaimer: "Routes are plausible reconstructions on the street network, not GPS trajectories.",
+    rA: "A · General overview", rB: "B · Territorial relationships", rC: "C · Temporal distribution",
+    rD: "D · User characteristics", rE: "E · Distance, duration and speed", rF: "F · Stations and streets",
+    rB_lead: "Observed trips between territorial units (origin → destination). Change the geographic level in the filters.",
+    rC_lead: "Departure time of each trip. Charts respond to period, day type, time of day and origin commune or area.",
+    rE_lead: "Observed duration; estimated network distance (inferred route preferring bike lanes); speed = estimated distance / observed duration. Not GPS measurements.",
+    compare: "Compare periods", compare_by: "Compare by",
+    sample: (n) => `n = ${n} trips`,
+    k_trips: "Trips", k_daily: "Trips per day (average)", k_active: "Active stations", k_orig: "Origin stations",
+    k_dest: "Destination stations", k_dur_mean: "Mean duration", k_dur_med: "Median duration",
+    k_dist: "Mean estimated distance", k_speed: "Mean estimated speed", k_same: "Within the same commune",
+    k_diff: "Between different communes", k_round: "Round trips (same station)",
+    k_note_static: "annual, unfiltered", k_note_ratio: "total distance / total time",
+    period_line: (a, b, n, d) => `Selected period: ${a} – ${b} · ${d} days · sample: ${n} valid trips.`,
+    min: "min", km: "km", kmh: "km/h", trips: "trips", share: "% of total",
+    departures: "Departures", arrivals: "Arrivals", total: "Total", net: "Net flow (arrivals − departures)",
+    top_dest: "Most frequent destinations", top_orig: "Most frequent origins", temporal: "Temporal distribution",
+    hour: "Hour", weekday_short: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    c_topod: "Top 20 directional relationships", c_sankey: "Main flows (Sankey)",
+    c_odheat: "Origin–destination matrix", c_inout: "Departures and arrivals by unit", c_internal: "Internal and inter-unit trips",
+    internal: "Internal", external_out: "Leave to another unit", external_in: "Arrive from another unit",
+    c_hour: "Trips by departure hour", c_dow: "Trips by weekday (daily average)",
+    c_month: "Daily average by month", c_heathd: "Hour × weekday (average)", c_daily: "Daily trips",
+    c_compare: "Hourly profile: period A vs B (daily average)",
+    c_gender: "Trips by recorded gender", c_age: "Trips by age group", c_genderhour: "Hourly profile by gender (% of each group)",
+    c_demodds: "Mean duration and distance by group (current filters)",
+    c_dds: "Distribution by group (p25 · median · p75)", c_disthist: "Estimated distance (current filters)",
+    c_sttop: "Most used stations", c_stnet: "Largest net inflows and outflows", c_stdeparr: "Stations with most departures and arrivals",
+    c_streets: "Streets with the highest inferred intensity",
+    avg_daily: "Daily average", trips_per_day: "trips per day", period: "Period",
+    user_avail: (g, a) => `<b>Attributes present in the original data.</b> Gender: recorded on every trip (${g} with a value). Age: not in the trip file; obtained from the 2015–2025 yearly user files for ${a} of trips (age at registration + years elapsed). Missing attributes are not inferred and gender categories are not exhaustive. Groups with fewer than 30 trips are hidden; in the published cubes, cells with fewer than 10 trips are recoded as "suppressed".`,
+    demo_one: "For privacy, gender and age filters are not combined: choosing one resets the other.",
+    demo_level: "With a demographic filter, flows are computed at commune level (no demographic data is published per station or neighborhood).",
+    demo_time: "Hourly charts are not broken down by gender or age in this section; see section D.",
+    suppressed: "suppressed", unknown: "unknown", n_lt: (m) => `n < ${m}`,
+    g_MALE: "Male", g_FEMALE: "Female", g_OTHER: "Other", g_UNKNOWN: "Not recorded", g_suppressed: "Suppressed",
+    grp_all: "Total", grp_comuna: "Origin commune", grp_barrio: "Origin neighborhood", grp_gender: "Gender", grp_age_group: "Age group",
+    grp_daytype: "Day type", grp_hour: "Departure hour", grp_bike_model: "Bike model",
+    var_duration_min: "Duration (min)", var_distance_km: "Estimated distance (km)", var_speed_kmh: "Estimated speed (km/h)",
+    col_group: "Group", col_n: "Trips", col_mean: "Mean", col_p25: "p25", col_median: "Median", col_p75: "p75",
+    street: "Street", inferred_trips: "Inferred trips", share_routed: "Share of reconstructed trips",
+    infra_yes: "Bike lane", infra_no: "No bike lane", infra: "Infrastructure", by_band: "By time of day", by_month: "By month",
+    strategy_note_short: "'Shortest' assumption: annual intensity without time filters.",
+    legend_streets: "Width = inferred trips", legend_od: "Width = trips; arrow = direction", legend_st: "Size = departures + arrivals",
+    unit_internal: "internal", click_hint: "Click a station, street or territorial unit.",
+    route_to: "Reconstructed routes to main destinations", selected_pair: "Selected pair",
+    no_data: "No trips with the current filters.",
+    station: "Station", barrio: "Neighborhood", comuna: "Commune",
+  },
+};
+
+let lang = "es";
+try { lang = localStorage.getItem("biciba-lang") || "es"; } catch (e) { /* storage unavailable */ }
+
+export const getLang = () => lang;
+export function setLang(l) {
+  lang = l;
+  try { localStorage.setItem("biciba-lang", l); } catch (e) { /* ignore */ }
+  document.documentElement.lang = l;
+  applyStatic();
+}
+export function t(key, ...args) {
+  const v = STR[lang][key] ?? STR.es[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+}
+export function applyStatic() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const v = t(el.dataset.i18n);
+    if (typeof v === "string") el.textContent = v;
+  });
+  document.querySelectorAll(".lang-btn").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
+}
+export const fmt = (n, d = 0) =>
+  n == null || Number.isNaN(n) ? "—" : Number(n).toLocaleString(lang === "es" ? "es-AR" : "en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+export const pct = (x, d = 1) => (x == null || Number.isNaN(x) ? "—" : fmt(x * 100, d) + " %");

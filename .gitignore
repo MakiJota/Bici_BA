@@ -24,3 +24,7 @@ data/processed/trip_routes.parquet
 .DS_Store
 Thumbs.db
 .vscode/
+
+# OSMnx HTTP cache
+pipeline/cache/
+cache/

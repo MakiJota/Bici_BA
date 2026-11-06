@@ -1,0 +1,55 @@
+# Deploys the static visualisation tool (web/) to GitHub Pages.
+#
+# The data products in web/data/ are built locally by pipeline/01-08 and
+# committed (≈23 MB, aggregated and privacy-safe). Raw data never enters the
+# repository, so CI only validates and publishes the site.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/deploy.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the required data products exist
+        run: |
+          for f in meta.json stations.json pairs.bin.gz od.bin.gz calendar.json demo_gender.json demo_age.json \
+                   segments.geojson seg_flows.bin.gz edge_seg.bin.gz ciclovias.geojson barrios.geojson comunas.geojson station_time.json; do
+            test -s "web/data/$f" || { echo "missing web/data/$f — run pipeline/08_export_web.py"; exit 1; }
+          done
+          echo "route files: $(ls web/data/routes | wc -l)"
+          du -sh web
+
+      - name: Syntax-check JavaScript modules
+        run: for f in web/js/*.js; do node --check "$f"; done
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

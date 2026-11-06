@@ -1,0 +1,30 @@
+{
+  "segments_raw": 31961,
+  "segments_excluded": {
+    "autopista_and_ramps": 306,
+    "private_passage": 30
+  },
+  "ciclovia_lines": 2764,
+  "ciclovia_km_official": 305.8,
+  "segments_with_infra": 3066,
+  "street_km_with_infra": 316.8,
+  "segments_digitised_against_numbering": 1,
+  "contraflow_edges_added": 2484,
+  "directed_edges": 41400,
+  "nodes": 17982,
+  "scc_count": 123,
+  "largest_scc_nodes": 17731,
+  "largest_scc_share_nodes": 0.986,
+  "edges_outside_largest_scc": 624,
+  "network_km": 3278.7,
+  "cost_factors": {
+    "infra": 0.6,
+    "hierarchy": {
+      "VÍA LOCAL": 1.0,
+      "VÍA DISTRIBUIDORA COMPLEMENTARIA": 1.15,
+      "VÍA DISTRIBUIDORA PRINCIPAL": 1.3,
+      "VÍA TRONCAL": 1.5
+    },
+    "pedestrian": 3.0
+  }
+}

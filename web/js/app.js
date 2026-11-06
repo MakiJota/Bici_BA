@@ -79,6 +79,10 @@ function buildFilters() {
   $("fAge").onchange = async () => { S.age = $("fAge").value; if (S.age) { S.gender = ""; $("fGender").value = ""; } await update(); };
   $("fReset").onclick = () => { resetState(); resetMapSelection(); buildFilters(); update(); };
   $("filtersToggle").onclick = () => $("filters").classList.toggle("open");
+  const lp = document.querySelector("#layers h3");
+  lp.onclick = () => $("layers").classList.toggle("collapsed");
+  if (innerWidth <= 900 && !lp.dataset.init) $("layers").classList.add("collapsed");
+  lp.dataset.init = "1";
 }
 function segControl(id, fn) {
   $(id).onclick = (e) => {

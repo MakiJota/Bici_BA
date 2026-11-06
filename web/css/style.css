@@ -96,7 +96,11 @@ main { position: fixed; top: var(--header-h); left: var(--filters-w); right: 0; 
   background: var(--surface); border: 1px solid var(--ink); padding: 10px 12px; font-size: 13px;
   max-height: calc(100% - 24px); overflow-y: auto;
 }
-.map-panel h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.map-panel h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; user-select: none; }
+.map-panel h3::after { content: " ▾"; }
+.map-panel.collapsed h3 { margin: 0; }
+.map-panel.collapsed h3::after { content: " ▸"; }
+.map-panel.collapsed > :not(h3) { display: none; }
 .map-panel > label { display: flex; gap: 6px; align-items: center; padding: 2px 0; }
 .map-panel input[type=checkbox] { accent-color: var(--ink); }
 .sub { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; }
@@ -171,9 +175,12 @@ td { font-family: "IBM Plex Mono", monospace; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
-  :root { --header-h: 96px; }
-  .top { flex-wrap: wrap; height: var(--header-h); padding: 8px 16px; gap: 8px 16px; }
-  .tabs { margin-left: 0; order: 3; width: 100%; overflow-x: auto; }
+  :root { --header-h: 112px; }
+  .top { flex-wrap: wrap; height: var(--header-h); padding: 8px 16px 0; gap: 6px 16px; align-content: flex-start; }
+  .tabs { margin-left: 0; order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .tab { white-space: nowrap; font-size: 13px; padding: 6px 8px; }
+  .map-panel { max-height: 60%; }
+  .map-panel.collapsed > :not(h3) { display: none; }
   .lang { margin-left: auto; }
   .filters { width: 100%; bottom: auto; max-height: 70vh; border-right: 0; border-bottom: 1px solid var(--ink); padding: 0 16px; }
   .filters-toggle { display: block; width: 100%; padding: 10px 0; background: none; border: 0; text-align: left; font-weight: 600; }

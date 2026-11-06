@@ -14,7 +14,8 @@ const basemap = () => dark()
 
 export function initMap(onSelectUnit) {
   map = new maplibregl.Map({
-    container: "map", style: basemap(), center: [-58.44, -34.615], zoom: 11.2, minZoom: 10, maxZoom: 17,
+    container: "map", style: basemap(), bounds: [[-58.535, -34.708], [-58.335, -34.528]],
+    fitBoundsOptions: { padding: 24 }, minZoom: 9.5, maxZoom: 17,
     attributionControl: { compact: true, customAttribution: D.meta.attribution },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");

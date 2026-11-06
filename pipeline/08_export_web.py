@@ -9,7 +9,7 @@ Files (format contract with web/js/data.js):
   pairs.bin.gz         columnar Uint16: o[P] d[P] dist_infra_m[P] dist_shortest_m[P]
   od.bin.gz            columnar: Uint32 pair[R], Uint32 dur_s[R], Uint16 n[R], Uint8 key[R]
                        key = (month-1)*12 + weekend*6 + hour_band
-  demo_gender.json, demo_age.json   comuna-level cubes: {oc, dc, key, cat, n, dur, dist}
+  demo_gender.json, demo_age.json   comuna-level cubes: {oc, dc, key, cat, n, dur, nr, dist}
                        cells < MIN_PUBLISH trips recoded to cat = "suppressed"
   calendar.json        {doy, hour, oc, n, dur}  (day of year x hour x origin comuna)
   segments.geojson     routed street segments: {k, name, infra, tipo, tot_i, tot_s}
@@ -43,7 +43,8 @@ def hour_band(h: pd.Series) -> np.ndarray:
 
 def write_bin(path, arrays) -> int:
     raw = b"".join(np.ascontiguousarray(a).tobytes() for a in arrays)
-    with gzip.open(path, "wb", compresslevel=9) as f:
+    # mtime=0 makes the output byte-identical across runs (no git churn)
+    with open(path, "wb") as fh, gzip.GzipFile(fileobj=fh, mode="wb", compresslevel=9, mtime=0, filename="") as f:
         f.write(raw)
     return path.stat().st_size
 
@@ -108,20 +109,21 @@ def main() -> None:
         od.p.to_numpy(np.uint32), od.dur.to_numpy(np.uint32), od.n.to_numpy(np.uint16), od.key.to_numpy(np.uint8)])
 
     # distance per trip for demographic cubes
-    dist = pairs.set_index("p").dist_infra_m
+    dist = pairs.set_index("p").dist_infra_m.where(lambda s: s > 0)   # round trips: no distance
     t["dist"] = t.p.map(dist).to_numpy()
 
     def demo_cube(col, cats):
         x = t[["oc", "dc", "key", col, "duration_s", "dist"]].copy()
         x["cat"] = x[col].astype("string").fillna("UNKNOWN" if col == "gender" else "unknown")
-        g = x.groupby(["oc", "dc", "key", "cat"]).agg(n=("duration_s", "size"),
-                                                      dur=("duration_s", "sum"), dist=("dist", "sum")).reset_index()
+        # nr = trips with an estimated distance (excludes round trips); dist = their summed metres
+        g = x.groupby(["oc", "dc", "key", "cat"]).agg(n=("duration_s", "size"), dur=("duration_s", "sum"),
+                                                      nr=("dist", "count"), dist=("dist", "sum")).reset_index()
         small = g.n < MIN_PUBLISH
         g.loc[small, "cat"] = "suppressed"
-        g = g.groupby(["oc", "dc", "key", "cat"], as_index=False)[["n", "dur", "dist"]].sum()
+        g = g.groupby(["oc", "dc", "key", "cat"], as_index=False)[["n", "dur", "nr", "dist"]].sum()
         g["cat"] = g.cat.map({c: i for i, c in enumerate(cats)}).astype(int)
         rep = {"cells": int(len(g)), "suppressed_trips": int(g.loc[g.cat == cats.index("suppressed"), "n"].sum())}
-        return {c: g[c].round().astype(int).tolist() for c in ["oc", "dc", "key", "cat", "n", "dur", "dist"]}, rep
+        return {c: g[c].round().astype(int).tolist() for c in ["oc", "dc", "key", "cat", "n", "dur", "nr", "dist"]}, rep
 
     dg, rep_g = demo_cube("gender", GENDERS)
     da, rep_a = demo_cube("age_group", AGES)

@@ -1,0 +1,33 @@
+{
+  "snap_m": {
+    "count": 403.0,
+    "mean": 30.2,
+    "std": 26.7,
+    "min": 0.6,
+    "50%": 23.6,
+    "90%": 51.2,
+    "99%": 104.8,
+    "max": 305.4
+  },
+  "stations_snap_over_limit": [
+    311,
+    490,
+    569
+  ],
+  "routable_trips": 2874229,
+  "od_pairs": 94736,
+  "pairs_same_node": 2,
+  "routing_failures_shortest": 0,
+  "routing_failures_infra": 0,
+  "trip_weighted": {
+    "dist_shortest_m": 2710.1455,
+    "dist_infra_m": 2950.0981,
+    "infra_share_shortest": 0.3363,
+    "infra_share_infra": 0.7393,
+    "overlap_infra_vs_shortest": 0.4463
+  },
+  "detour_infra_vs_shortest": 0.0885,
+  "segments_with_flow": 13362,
+  "top200_segments_rank_overlap_with_shortest": 0.42,
+  "runtime_s": 153
+}

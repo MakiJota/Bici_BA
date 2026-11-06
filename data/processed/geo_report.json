@@ -1,0 +1,30 @@
+{
+  "barrios_without_population": [],
+  "stations_outside_polygons": 1,
+  "stations_assigned_by_nearest": [
+    {
+      "station_id": 111,
+      "name": "MACACHA GUEMES",
+      "dist_m": 4.0
+    }
+  ],
+  "stations_unassigned": 0,
+  "stations_per_comuna": {
+    "1": 57,
+    "2": 19,
+    "3": 18,
+    "4": 26,
+    "5": 17,
+    "6": 19,
+    "7": 18,
+    "8": 8,
+    "9": 15,
+    "10": 19,
+    "11": 27,
+    "12": 38,
+    "13": 42,
+    "14": 46,
+    "15": 34
+  },
+  "barrios_with_stations": 48
+}

@@ -12,8 +12,11 @@ const CONFIG = {
   tripInfra: [255, 255, 255],      // trail on a bike lane
   tripStreet: [125, 125, 125],     // trail on a regular street
   tripOpacity: 0.6,
-  trailSeconds: 300,
+  trailSeconds: 300,               // minimum trail, animated seconds ...
+  trailRealSeconds: 1.6,           // ... and at least this long on screen at any playback speed
   pointSeconds: 240,
+  pointRealSeconds: 1.2,
+  netStepsPerBin: 8,               // street colours change in 8 small steps per 15 min, never all at once
   tripWidthPx: 2,
   roadWidthPx: 1.2,
   rampMaxQuantile: 0.995,
@@ -31,7 +34,7 @@ let day = null;                                        // decoded day file
 let year = null, month = null, dow = null;
 let built = null;                                      // TripsLayer arrays for the current strategy
 let focusStation = -1;                                 // -1 = all stations
-let strategy = "I", time = 7 * 3600, playing = false, speed = 600, lastFrame = null, shownBin = -1, shownMode = null;
+let strategy = "I", time = 7 * 3600, playing = false, speed = 300, lastFrame = null, shownBin = -1, shownMode = null;
 const show = { trips: true, ends: true, net: true, comunas: true };
 let netMode = "bin", netColors = null, lastStats = 0, netKey = 0, shownBuild = -1;
 
@@ -172,7 +175,9 @@ function buildTrips() {
   const tz = Array.from(tot).filter((x) => x > 0).sort((a, b) => a - b);
   const maxCum = Math.max(1, tz[Math.floor(CONFIG.rampMaxQuantile * (tz.length - 1))] || 1);
   const cumStarts = []; startsPerBin.reduce((a, v, i) => (cumStarts[i] = a + v), 0);
-  built = { path, times, colors, tripStartIdx, cnt, maxBin, maxCum, startsPerBin, activePerBin, cumStarts, sPos, ePos, sT, eT, nT };
+  const cum = new Float32Array(net.K * NB);             // running totals for the "since midnight" mode
+  for (let k = 0; k < net.K; k++) { let a = 0; for (let b = 0; b < NB; b++) { a += cnt[k * NB + b]; cum[k * NB + b] = a; } }
+  built = { path, times, colors, tripStartIdx, cnt, cum, maxBin, maxCum, startsPerBin, activePerBin, cumStarts, sPos, ePos, sT, eT, nT };
   // data objects are created once per build: a new object every frame would make
   // deck.gl re-upload all vertex attributes to the GPU on each frame
   built.tripData = { length: nT, startIndices: tripStartIdx,
@@ -189,26 +194,31 @@ function rampColor(x) {
   const i = Math.min(Math.floor(s), r.length - 2), f = s - i;
   return [0, 1, 2].map((k) => Math.round(r[i][k] + (r[i + 1][k] - r[i][k]) * f));
 }
-// one colour per street segment; only this lookup changes when the 15-min window
-// moves (the path geometry is tessellated once and never re-uploaded)
-function fillNetColors(bin) {
-  const mx = netMode === "bin" ? built.maxBin : built.maxCum, lut = new Array(net.K);
+const PALETTE = Array.from({ length: 64 }, (_, i) => rampColor(i / 63));
+// One colour per street segment, interpolated between the centres of neighbouring
+// 15-minute bins so the network brightens and fades gradually. Only this lookup
+// changes; the path geometry is tessellated once.
+function fillNetColors(t) {
+  const x = t / CONFIG.binS - 0.5, b0 = Math.max(0, Math.min(NB - 1, Math.floor(x))), b1 = Math.min(NB - 1, b0 + 1);
+  const f = Math.min(1, Math.max(0, x - b0)), src = netMode === "bin" ? built.cnt : built.cum;
+  const lm = Math.log1p(netMode === "bin" ? built.maxBin : built.maxCum), lut = netColors && netColors.length === net.K ? netColors : new Array(net.K);
   for (let k = 0; k < net.K; k++) {
-    let n = 0;
-    if (netMode === "bin") n = built.cnt[k * NB + bin];
-    else for (let b = 0; b <= bin; b++) n += built.cnt[k * NB + b];
-    lut[k] = n > 0 ? rampColor(Math.log1p(n) / Math.log1p(mx)) : CONFIG.roadBase;
+    const n = (1 - f) * src[k * NB + b0] + f * src[k * NB + b1];
+    lut[k] = n > 0.05 ? PALETTE[Math.min(63, Math.round((Math.log1p(n) / lm) * 63))] : CONFIG.roadBase;
   }
   netColors = lut;
 }
 function layers() {
   const { TripsLayer, PathLayer, ScatterplotLayer, GeoJsonLayer, DataFilterExtension } = window.deck;
-  const bin = Math.min(NB - 1, Math.floor(time / CONFIG.binS));
+  const step = Math.floor(time / (CONFIG.binS / CONFIG.netStepsPerBin));
   const netOn = show.net || !show.trips;
   net.data ??= { length: net.K, startIndices: net.start, attributes: { getPath: { value: net.path, size: 2 } } };
-  if (netOn && (bin !== shownBin || netMode !== shownMode || shownBuild !== built.version)) {
-    fillNetColors(bin); shownBin = bin; shownMode = netMode; shownBuild = built.version; netKey++;
+  if (netOn && (step !== shownBin || netMode !== shownMode || shownBuild !== built.version)) {
+    fillNetColors(time); shownBin = step; shownMode = netMode; shownBuild = built.version; netKey++;
   } else if (!netOn && shownBin !== -2) { netColors = null; shownBin = -2; netKey++; }
+  // trails and departure / arrival dots stay on screen long enough to follow at any speed
+  const trail = Math.max(CONFIG.trailSeconds, speed * CONFIG.trailRealSeconds);
+  const pointWin = Math.max(CONFIG.pointSeconds, speed * CONFIG.pointRealSeconds);
   const additive = { depthTest: false, blend: true, blendFunc: [770, 1, 1, 1], blendEquation: 32774 };
   const out = [new PathLayer({
     id: "net", data: net.data,
@@ -221,14 +231,14 @@ function layers() {
     id: "trips", data: built.tripData,
     _pathType: "open", opacity: focusStation >= 0 ? 0.95 : CONFIG.tripOpacity, widthUnits: "pixels",
     getWidth: focusStation >= 0 ? 4 : CONFIG.tripWidthPx, updateTriggers: { getWidth: focusStation },
-    capRounded: true, jointRounded: true, fadeTrail: true, trailLength: CONFIG.trailSeconds, currentTime: time, parameters: additive,
+    capRounded: true, jointRounded: true, fadeTrail: true, trailLength: trail, currentTime: time, parameters: additive,
   }));
   if (show.ends) {
     const pts = (id, data, filled) => new ScatterplotLayer({
       id, data,
       filled, stroked: !filled, getFillColor: [255, 255, 255], getLineColor: [255, 255, 255], lineWidthUnits: "pixels", getLineWidth: 1,
       radiusUnits: "pixels", getRadius: filled ? 2.2 : 3.5, opacity: 0.85,
-      extensions: [new DataFilterExtension({ filterSize: 1 })], filterRange: [time - CONFIG.pointSeconds, time], parameters: additive,
+      extensions: [new DataFilterExtension({ filterSize: 1 })], filterRange: [time - pointWin, time], parameters: additive,
     });
     out.push(pts("starts", built.startData, true), pts("ends", built.endData, false));
   }

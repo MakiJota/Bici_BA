@@ -4,6 +4,7 @@ import { applyStatic, fmt, getLang, setLang, t } from "./i18n.js";
 import { focusStation, initMap, resetMapSelection, resizeMap, setAggregate, setLabels, updateMap } from "./map.js";
 import { initReport, relabelReport, renderReport } from "./report.js";
 import { renderMethod } from "./method.js";
+import { closeAnim, openAnim, relabelAnim } from "./anim.js";
 
 let view = "map", reportDirty = true, current = null;
 const $ = (id) => document.getElementById(id);
@@ -24,7 +25,7 @@ async function main() {
   $("loading").classList.add("done");
   await update();
   const h = location.hash.slice(1);                 // deep links: #report, #method
-  if (h === "report" || h === "method") switchView(h);
+  if (["report", "method", "anim"].includes(h)) switchView(h);
   loadDemo();   // prefetch for a fast first demographic filter
 }
 
@@ -119,8 +120,12 @@ function switchView(v) {
   history.replaceState(null, "", v === "map" ? location.pathname : `#${v}`);
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.view === v));
   document.querySelectorAll(".view").forEach((s) => s.classList.toggle("active", s.id === `view-${v}`));
-  $("filters").style.display = v === "method" ? "none" : "";
-  document.querySelector("main").style.left = v === "method" && innerWidth > 900 ? "0" : "";
+  const noFilters = v === "method" || v === "anim";       // the animation has its own controls
+  $("filters").style.display = noFilters ? "none" : "";
+  document.querySelector("main").style.left = noFilters ? "0" : "";
+  document.querySelector("main").style.top = noFilters && innerWidth <= 900 ? "var(--header-h)" : "";
+  if (v === "anim") openAnim().catch((e) => { $("animLoading").hidden = false; $("animLoading").textContent = "Error: " + e.message; });
+  else closeAnim();
   if (v === "map") resizeMap();
   if (v === "report" && reportDirty && current) { renderReport(current); reportDirty = false; }
 }
@@ -128,7 +133,7 @@ function wireTabs() {
   document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => switchView(b.dataset.view)));
   document.querySelectorAll(".lang-btn").forEach((b) => b.addEventListener("click", async () => {
     setLang(b.dataset.lang);
-    buildFilters(); relabelReport(); renderMethod();
+    buildFilters(); relabelReport(); renderMethod(); relabelAnim();
     reportDirty = true;
     await update(false);
   }));

@@ -65,5 +65,11 @@ MAX_SPEED_KMH = 35             # estimated route speed above this is implausible
 MIN_PUBLISH = 10
 MIN_CELL = 30
 
+# Days published for the trip animation (web "Animación" tab). One full week
+# of high spring activity (Mon 20 - Sun 26 Oct, incl. the busiest day of the
+# year, Tue 21 Oct) plus a winter weekday and a winter Saturday for contrast.
+ANIM_DAYS = ["2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24",
+             "2025-10-25", "2025-10-26", "2025-06-18", "2025-06-21"]
+
 # Hour bands used by the browser cubes: [start, end)
 HOUR_BANDS = [(0, 7), (7, 10), (10, 14), (14, 17), (17, 20), (20, 24)]

@@ -7,6 +7,7 @@ Interactive, bilingual (Spanish / English) platform that reconstructs and visual
 The site has two sections, plus a methodology page:
 
 - **Mapa de movilidad / Mobility map**: stations, directional OD arrows (station, barrio or comuna level; top 10/20/50), reconstructed routes, inferred street intensity, barrios, comunas and ciclovías. Click a station, street or territory for details.
+- **Animación / Animation**: one day of trips moving along their reconstructed routes (deck.gl TripsLayer, in the style of the FlowSense viewer). Trails are white on ciclovías and grey on regular streets, the street network glows with traffic per 15 minutes, and you can switch the routing assumption, choose among 9 days or focus on one station.
 - **Informe de movilidad / Mobility report**: (A) overview KPIs, (B) territorial relationships (top flows, Sankey, OD heatmap), (C) temporal patterns and period comparison, (D) user characteristics, (E) distance, duration and speed, (F) station and street rankings.
 
 Filters (months, day type, time bands, area, origin, destination, gender **or** age) are shared by the map and the report.
@@ -35,6 +36,7 @@ Filters (months, day type, time bands, area, origin, destination, gender **or** 
 | 06b | `06b_osm_comparison.py` | Independent check against OpenStreetMap bicycle routing (optional, needs internet) |
 | 07 | `07_aggregate.py` | OD matrices (3 levels), territorial / station indicators, distance / duration / speed |
 | 08 | `08_export_web.py` | Compact, privacy-safe data products for the browser (`web/data/`, ≈ 23 MB) |
+| 09 | `09_export_animation.py` | Trip animation data for the days in `config.ANIM_DAYS` (`web/data/anim/`, ≈ 3 MB) |
 
 ## Documentation
 
@@ -60,6 +62,7 @@ python 06_routing.py              # ~3 min
 python 06b_osm_comparison.py      # optional
 python 07_aggregate.py
 python 08_export_web.py
+python 09_export_animation.py
 cd ../eda && python 01_temporal.py && python 02_spatial.py && python 03_users_dds.py && python 04_routing_streets.py
 ```
 

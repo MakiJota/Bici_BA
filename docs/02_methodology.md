@@ -51,12 +51,14 @@ Every trip is assigned to exactly one ordered pair, so directional flows never d
 
 | Safeguard | Rule |
 |---|---|
-| No row-level data published | the browser receives only aggregated cubes |
+| No row-level data published | the browser receives only aggregated cubes, **except** the animation days (below) |
 | No identifiers | `id_usuario` is used only for the age join |
 | Coarse demographic geography | gender and age cubes exist only at comuna × comuna level |
 | Small-cell recoding | a demographic cell with < 10 trips is recoded to `suppressed` (totals preserved; 3.6 % of trips for gender, 7.3 % for age) |
 | Display threshold | any demographic figure based on < 30 trips is shown as `n < 30` |
 | No cross-tabulation | gender and age are never combined in one cube or filter |
+
+**Animation exception (step 09).** To animate trips, the 9 days in `config.ANIM_DAYS` are published per trip with only origin station, destination station and departure / arrival minute. No user id, gender, age or bike model is included. Each trip moves along its inferred route at constant speed between the observed times; it is not a GPS trajectory.
 
 ## 8. Browser data model (step 08)
 

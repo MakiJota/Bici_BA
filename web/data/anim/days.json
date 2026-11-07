@@ -1,0 +1,87 @@
+{
+ "days": [
+  {
+   "date": "2025-10-20",
+   "dow": 0,
+   "trips": 13680,
+   "round_trips": 989,
+   "pairs": 9337,
+   "file": "2025-10-20.bin.gz",
+   "bytes": 486589
+  },
+  {
+   "date": "2025-10-21",
+   "dow": 1,
+   "trips": 15062,
+   "round_trips": 1129,
+   "pairs": 9916,
+   "file": "2025-10-21.bin.gz",
+   "bytes": 518548
+  },
+  {
+   "date": "2025-10-22",
+   "dow": 2,
+   "trips": 14376,
+   "round_trips": 991,
+   "pairs": 9680,
+   "file": "2025-10-22.bin.gz",
+   "bytes": 503659
+  },
+  {
+   "date": "2025-10-23",
+   "dow": 3,
+   "trips": 14499,
+   "round_trips": 998,
+   "pairs": 9675,
+   "file": "2025-10-23.bin.gz",
+   "bytes": 506179
+  },
+  {
+   "date": "2025-10-24",
+   "dow": 4,
+   "trips": 6383,
+   "round_trips": 506,
+   "pairs": 4927,
+   "file": "2025-10-24.bin.gz",
+   "bytes": 250208
+  },
+  {
+   "date": "2025-10-25",
+   "dow": 5,
+   "trips": 2937,
+   "round_trips": 382,
+   "pairs": 2205,
+   "file": "2025-10-25.bin.gz",
+   "bytes": 119809
+  },
+  {
+   "date": "2025-10-26",
+   "dow": 6,
+   "trips": 9591,
+   "round_trips": 1526,
+   "pairs": 5729,
+   "file": "2025-10-26.bin.gz",
+   "bytes": 311656
+  },
+  {
+   "date": "2025-06-18",
+   "dow": 2,
+   "trips": 5614,
+   "round_trips": 453,
+   "pairs": 4083,
+   "file": "2025-06-18.bin.gz",
+   "bytes": 211300
+  },
+  {
+   "date": "2025-06-21",
+   "dow": 5,
+   "trips": 2684,
+   "round_trips": 379,
+   "pairs": 1858,
+   "file": "2025-06-21.bin.gz",
+   "bytes": 104128
+  }
+ ],
+ "bin_s": 900,
+ "note": "Departure and arrival observed (minute resolution); path = inferred route at constant speed. Not GPS."
+}

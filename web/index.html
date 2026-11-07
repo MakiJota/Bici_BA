@@ -23,6 +23,7 @@
     <nav class="tabs" role="tablist">
       <button role="tab" class="tab active" data-view="map" data-i18n="nav_map">Mapa de movilidad</button>
       <button role="tab" class="tab" data-view="report" data-i18n="nav_report">Informe de movilidad</button>
+      <button role="tab" class="tab" data-view="anim" data-i18n="nav_anim">Animación</button>
       <button role="tab" class="tab" data-view="method" data-i18n="nav_method">Metodología</button>
     </nav>
     <div class="lang" role="group" aria-label="Idioma / Language">
@@ -180,6 +181,59 @@
             <div class="grid2"><div class="chart tall" id="cStDepArr"></div><div class="chart tall" id="cStreets"></div></div>
           </section>
         </article>
+      </div>
+    </section>
+
+    <!-- ===================== Animation ===================== -->
+    <section class="view" id="view-anim">
+      <div id="anim"></div>
+      <div class="a-loading" id="animLoading" hidden data-i18n="loading">Cargando datos…</div>
+      <div class="a-panel" id="aPanel">
+        <h3 data-i18n="a_title">Un día de viajes</h3>
+        <select id="aDay" aria-label="day"></select>
+        <div class="a-sub" data-i18n="a_station">Estación (opcional)</div>
+        <select id="aStation" aria-label="station"></select>
+        <div class="a-sub" data-i18n="a_strategy">Ruta reconstruida</div>
+        <div class="seg small dark" id="aStrategy">
+          <button data-v="I" class="on" data-i18n="st_infra">Prioriza ciclovías</button>
+          <button data-v="S" data-i18n="st_short">Más corta</button>
+        </div>
+        <div class="a-stat"><span data-i18n="a_started">Viajes iniciados</span><b id="aStarted">0</b></div>
+        <div class="a-stat"><span data-i18n="a_active">En curso (franja de 15 min)</span><b id="aActive">0</b></div>
+        <div class="a-stat"><span data-i18n="a_bin">Iniciados en estos 15 min</span><b id="aBin">0</b></div>
+        <div class="a-stat"><span data-i18n="a_lane">En ciclovía ahora</span><b id="aLane">—</b></div>
+        <div class="a-sec">
+          <h4 data-i18n="a_chart">Viajes iniciados cada 15 min</h4>
+          <canvas id="aChart"></canvas>
+          <div class="a-leg"><span class="bar"></span><span data-i18n="a_per15">por 15 min</span><span class="line"></span><span data-i18n="a_cum">acumulado</span></div>
+        </div>
+        <div class="a-sec">
+          <h4 data-i18n="a_show">Mostrar</h4>
+          <label><input type="checkbox" id="aTrips" checked> <span data-i18n="a_trips">Viajes (estelas en movimiento)</span></label>
+          <label><input type="checkbox" id="aEnds" checked> <span data-i18n="a_ends">Salidas y llegadas</span></label>
+          <label><input type="checkbox" id="aNet" checked> <span data-i18n="a_net">Tránsito en la red vial</span></label>
+          <select id="aNetMode" class="indent">
+            <option value="bin" data-i18n="a_mode_bin">bicicletas en estos 15 min</option>
+            <option value="cum" data-i18n="a_mode_cum">bicicletas desde la medianoche</option>
+          </select>
+          <label><input type="checkbox" id="aComunas" checked> <span data-i18n="ly_comunas">Comunas</span></label>
+          <div class="a-leg"><span class="sw" id="aLgInfra"></span><span data-i18n="a_on_lane">en ciclovía</span>
+            <span class="sw" id="aLgStreet"></span><span data-i18n="a_on_street">en calle común</span></div>
+          <div class="a-leg"><span class="pt" id="aLgStart"></span><span data-i18n="a_start">salida</span>
+            <span class="ring"></span><span data-i18n="a_end">llegada</span></div>
+          <div class="a-leg"><span data-i18n="a_few">pocas</span><span class="ramp" id="aLgRamp"></span><span data-i18n="a_many">muchas</span></div>
+        </div>
+        <p class="a-note" data-i18n="a_note">Horas de salida y llegada observadas; el recorrido es la ruta reconstruida sobre la red vial, a velocidad constante. No son trayectorias GPS.</p>
+      </div>
+      <div class="a-bar">
+        <button id="aPlay" aria-label="play">&#9654;</button>
+        <span id="aClock">07:00</span>
+        <input type="range" id="aSlider" min="0" max="86400" step="60" value="25200" aria-label="time">
+        <label><span data-i18n="a_speed">Velocidad</span>
+          <select id="aSpeed">
+            <option value="120">2 min/s</option><option value="300">5 min/s</option>
+            <option value="600" selected>10 min/s</option><option value="1800">30 min/s</option><option value="3600">1 h/s</option>
+          </select></label>
       </div>
     </section>
 

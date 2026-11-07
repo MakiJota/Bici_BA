@@ -2,6 +2,7 @@
 # Reviewed in docs/00_legacy_review.md; nothing from it is versioned.
 Eco_bici/
 00_eco_bici_legacy/
+Eco_bici_legacy/
 *.RData
 .Rhistory
 .Rproj.user/

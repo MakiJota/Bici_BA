@@ -166,7 +166,9 @@ function arrowHead(pts, w) {
   const k = Math.cos((pts[0][1] * Math.PI) / 180);
   const tip = pts[pts.length - 3], prev = pts[pts.length - 6];
   const dx = (tip[0] - prev[0]) * k, dy = tip[1] - prev[1], L = Math.hypot(dx, dy) || 1;
-  const ux = dx / L, uy = dy / L, size = 0.0009 + w * 0.00028;
+  // head size grows with flow width but never exceeds a fifth of the arrow's length
+  const chordDeg = Math.hypot((pts[pts.length - 1][0] - pts[0][0]) * k, pts[pts.length - 1][1] - pts[0][1]);
+  const ux = dx / L, uy = dy / L, size = Math.min(0.0009 + w * 0.00028, chordDeg * 0.2);
   const back = [tip[0] - (ux * size) / k, tip[1] - uy * size];
   const left = [back[0] - (uy * size * 0.55) / k, back[1] + ux * size * 0.55];
   const right = [back[0] + (uy * size * 0.55) / k, back[1] - ux * size * 0.55];

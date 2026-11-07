@@ -1,7 +1,8 @@
-// "Animación" tab: one day of EcoBici trips moving along their reconstructed routes
-// (deck.gl TripsLayer). Departure / arrival times are observed; the path is the
-// inferred route (step 06) traversed at constant speed. Not GPS.
-import { D, loadStreets } from "./data.js";
+// "Animación" tab: a typical day of EcoBici trips moving along their reconstructed
+// routes (deck.gl TripsLayer), for any year, one of four months and five weekdays.
+// Departure / arrival times are observed; the path is the inferred route (step 09)
+// traversed at constant speed. Not GPS.
+import { D } from "./data.js";
 import { fmt, getLang, pct, t } from "./i18n.js";
 
 const CONFIG = {
@@ -23,9 +24,11 @@ const $ = (id) => document.getElementById(id);
 const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
 const NB = 96;                                         // 15-minute bins in a day
 
-let inited = false, deckgl = null, days = null, active = false;
+let inited = false, deckgl = null, idx = null, active = false;
 let net = null;                                        // flat street network
+let ydata = null;                                      // stations + pair routes of the selected year
 let day = null;                                        // decoded day file
+let year = null, month = null, dow = null;
 let built = null;                                      // TripsLayer arrays for the current strategy
 let focusStation = -1;                                 // -1 = all stations
 let strategy = "I", time = 7 * 3600, playing = false, speed = 600, lastFrame = null, shownBin = -1, shownMode = null;
@@ -50,41 +53,50 @@ async function bytes(url) {
 }
 const fmtTime = (s) => `${String(Math.floor(s / 3600) % 24).padStart(2, "0")}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`;
 
-// ---------------- Street network (from segments.geojson) ----------------
-function buildNetwork() {
-  const feats = D.segs.features, K = feats.length;
-  let nv = 0;
-  const lines = feats.map((f) => (f.geometry.type === "LineString" ? f.geometry.coordinates : f.geometry.coordinates.flat()));
-  lines.forEach((c) => { nv += c.length; });
-  const path = new Float32Array(nv * 2), start = new Uint32Array(K + 1), vSeg = new Uint32Array(nv);
-  const len = new Float32Array(K), infra = new Uint8Array(K);
-  let v = 0;
-  lines.forEach((c, k) => {
-    start[k] = v;
+// ---------------- Street network (anim/network.bin.gz: every segment of the routing network) ----------------
+async function loadNetwork() {
+  const b = await bytes(`data/anim/${idx.network}`), buf = b.buffer;
+  const [K, nv] = new Uint32Array(buf, 0, 2);
+  const start = new Uint32Array(buf, 8, K + 1), path = new Float32Array(buf.slice(8 + 4 * (K + 1), 8 + 4 * (K + 1) + 8 * nv));
+  const infra = new Uint8Array(buf, 8 + 4 * (K + 1) + 8 * nv, K);
+  const vSeg = new Uint32Array(nv), len = new Float32Array(K);
+  for (let k = 0; k < K; k++) {
     let L = 0;
-    for (let j = 0; j < c.length; j++) {
-      path[2 * v] = c[j][0]; path[2 * v + 1] = c[j][1]; vSeg[v] = k; v++;
-      if (j) L += dist(c[j - 1][0], c[j - 1][1], c[j][0], c[j][1]);
+    for (let v = start[k]; v < start[k + 1]; v++) {
+      vSeg[v] = k;
+      if (v > start[k]) L += dist(path[2 * v - 2], path[2 * v - 1], path[2 * v], path[2 * v + 1]);
     }
-    len[k] = L; infra[k] = feats[k].properties.infra;
-  });
-  start[K] = v;
+    len[k] = L;
+  }
   net = { K, path, start, vSeg, len, infra, nv };
 }
 const KX = 111320 * Math.cos((34.6 * Math.PI) / 180), KY = 110570;
 const dist = (x1, y1, x2, y2) => Math.hypot((x2 - x1) * KX, (y2 - y1) * KY);
 
-// ---------------- Day file ----------------
-async function loadDay(meta) {
-  const b = await bytes(`data/anim/${meta.file}`), buf = b.buffer;
+// ---------------- Year and day files ----------------
+const yearCache = new Map();
+function reader(buf) {
   let off = 0;
-  const u32 = (n) => { const a = new Uint32Array(buf, off, n); off += 4 * n; return a; };
-  const u16 = (n) => { const a = new Uint16Array(buf, off, n); off += 2 * n; return a; };
-  const [nT, nP, nI, nS] = u32(4);
-  const startI = u32(nP + 1), startS = u32(nP + 1);
-  const pO = u16(nP), pD = u16(nP), refsI = u16(nI), refsS = u16(nS);
-  const tPair = u16(nT), tStart = u16(nT), tEnd = u16(nT);
-  day = { meta, nT, nP, pO, pD, refs: { I: [startI, refsI], S: [startS, refsS] }, tPair, tStart, tEnd };
+  const take = (T, n) => { const a = new T(buf.slice(off, off + T.BYTES_PER_ELEMENT * n)); off += T.BYTES_PER_ELEMENT * n; return a; };
+  return { u32: (n) => take(Uint32Array, n), u16: (n) => take(Uint16Array, n) };
+}
+async function loadYear(y) {
+  if (!yearCache.has(y)) yearCache.set(y, (async () => {
+    const meta = idx.years.find((x) => x.year === y);
+    const [st, b] = await Promise.all([fetch(`data/anim/${meta.stations}`).then((r) => r.json()), bytes(`data/anim/${meta.routes}`)]);
+    const r = reader(b.buffer), [nP, nI, nS] = r.u32(3);
+    const startI = r.u32(nP + 1), startS = r.u32(nP + 1), pO = r.u16(nP), pD = r.u16(nP), refsI = r.u16(nI), refsS = r.u16(nS);
+    return { meta, st, nP, pO, pD, refs: { I: [startI, refsI], S: [startS, refsS] } };
+  })());
+  return yearCache.get(y);
+}
+async function loadDay(y, meta) {
+  const [yd, b] = await Promise.all([loadYear(y), bytes(`data/anim/${meta.file}`)]);
+  const r = reader(b.buffer), [nT] = r.u32(1);
+  const tPair = r.u32(nT), tStart = r.u16(nT), tEnd = r.u16(nT);
+  if (ydata !== yd) focusStation = -1;
+  ydata = yd;
+  day = { meta, nT, nP: yd.nP, pO: yd.pO, pD: yd.pD, refs: yd.refs, tPair, tStart, tEnd };
   buildTrips();
 }
 
@@ -103,7 +115,7 @@ function buildTrips() {
   const pairLen = new Float32Array(nP);
   const segCnt = new Uint32Array(nP + 1);
   for (let p = 0; p < nP; p++) segCnt[p + 1] = segCnt[p] + (rStart[p + 1] - rStart[p]);
-  const segK = new Uint16Array(segCnt[nP]), segMid = new Float32Array(segCnt[nP]);
+  const segK = new Uint32Array(segCnt[nP]), segMid = new Float32Array(segCnt[nP]);
   for (let p = 0; p < nP; p++) {
     let w = pairV[p], cum = 0, s = segCnt[p];
     for (let r = rStart[p]; r < rStart[p + 1]; r++) {
@@ -130,7 +142,7 @@ function buildTrips() {
   const startsPerBin = new Float64Array(NB), activePerBin = new Float64Array(NB);
   const sPos = new Float32Array(nT * 2), ePos = new Float32Array(nT * 2), sT = new Float32Array(nT), eT = new Float32Array(nT);
   for (let i = 0; i < nT; i++) {
-    const p = day.tPair[i], t0 = day.tStart[i] * 60, t1 = day.tEnd[i] * 60, o = D.stations[day.pO[p]], d = D.stations[day.pD[p]];
+    const p = day.tPair[i], t0 = day.tStart[i] * 60, t1 = day.tEnd[i] * 60, o = ydata.st[day.pO[p]], d = ydata.st[day.pD[p]];
     if (!keep(i)) { sT[i] = eT[i] = -1e9; continue; }   // filtered out: never inside the visible window
     sPos[2 * i] = o.lon; sPos[2 * i + 1] = o.lat; ePos[2 * i] = d.lon; ePos[2 * i + 1] = d.lat; sT[i] = t0; eT[i] = t1;
     startsPerBin[Math.min(NB - 1, Math.floor(t0 / CONFIG.binS))]++;
@@ -228,7 +240,7 @@ function layers() {
     out.push(pts("starts", built.startData, true), pts("ends", built.endData, false));
   }
   if (focusStation >= 0) {
-    const s = D.stations[focusStation];
+    const s = ydata.st[focusStation];
     out.push(new ScatterplotLayer({ id: "focus", data: [s], getPosition: (d) => [d.lon, d.lat], filled: true, stroked: true,
       getFillColor: [6, 6, 6], getLineColor: [255, 255, 255], lineWidthUnits: "pixels", getLineWidth: 2.5,
       radiusUnits: "pixels", getRadius: 9 }));
@@ -295,14 +307,38 @@ function setPlaying(p) { playing = p; $("aPlay").innerHTML = p ? "&#10074;&#1007
 
 function dayLabel(d) {
   const dt = new Date(`${d.date}T12:00:00Z`);
-  return dt.toLocaleDateString(getLang() === "es" ? "es-AR" : "en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }) +
-    ` · ${fmt(d.trips)} ${t("trips")}`;
+  return dt.toLocaleDateString(getLang() === "es" ? "es-AR" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+const findDay = (y, m, w) => idx.years.find((x) => x.year === y)?.days.find((d) => d.month === m && d.dow === w);
+// same month and weekday in every year: small bar chart, click to switch year
+function drawYears() {
+  const c = $("aYears"), ctx = c.getContext("2d"), dpr = devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+  if (!w) return;
+  c.width = w * dpr; c.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const ys = idx.years, vals = ys.map((y) => findDay(y.year, month, dow)?.trips || 0), mx = Math.max(1, ...vals), bw = w / ys.length;
+  ctx.font = "9px Inter, sans-serif"; ctx.textAlign = "center";
+  ys.forEach((y, i) => {
+    const bh = (vals[i] / mx) * (h - 14);
+    ctx.fillStyle = y.year === year ? "#ffffff" : "#5a5a5a";
+    ctx.fillRect(i * bw + 1, h - 12 - bh, bw - 2, bh);
+    if (ys.length < 9 || i % 2 === (ys.length - 1) % 2) { ctx.fillStyle = y.year === year ? "#ffffff" : "#7a7a7a"; ctx.fillText(String(y.year).slice(2), i * bw + bw / 2, h - 2); }
+  });
+  c._bw = bw;
+}
+function relabelDays() {
+  const L = t("a_mon"), W = t("a_dows");
+  $("aMonth").innerHTML = idx.months.map((m) => `<button data-v="${m}" class="${m === month ? "on" : ""}" ${findDay(year, m, dow) || idx.dows.some((w) => findDay(year, m, w)) ? "" : "disabled"}>${L[m]}</button>`).join("");
+  $("aDow").innerHTML = idx.dows.map((w) => `<button data-v="${w}" class="${w === dow ? "on" : ""}" ${findDay(year, month, w) ? "" : "disabled"}>${W[w]}</button>`).join("");
+  const d = day.meta;
+  $("aDate").innerHTML = `${dayLabel(d)} · <b>${fmt(d.trips)}</b> ${t("trips")}<small>${t("a_typical")}${year < 2019 ? ". " + t("a_old_net") : ""}</small>`;
+  drawYears();
 }
 export function relabelAnim() {
   if (!inited) return;
-  $("aDay").innerHTML = days.days.map((d, i) => `<option value="${i}">${dayLabel(d)}</option>`).join("");
-  $("aDay").value = String(days.days.indexOf(day.meta));
-  $("aStation").innerHTML = `<option value="-1">${t("a_all_stations")}</option>` + [...D.stations]
+  $("aYear").innerHTML = idx.years.map((y) => `<option value="${y.year}">${y.year}</option>`).join("");
+  $("aYear").value = String(year);
+  relabelDays();
+  $("aStation").innerHTML = `<option value="-1">${t("a_all_stations")}</option>` + [...ydata.st]
     .sort((a, b) => a.name.localeCompare(b.name, "es")).map((s) => `<option value="${s.i}">${s.name} (#${s.id})</option>`).join("");
   $("aStation").value = String(focusStation);
   $("aLgStart").title = t("a_start");
@@ -314,10 +350,13 @@ export async function openAnim() {
   active = true;
   if (!inited) {
     $("animLoading").hidden = false;
-    await Promise.all([loadScript(DECK_URL), loadStreets()]);
-    days = await (await fetch("data/anim/days.json")).json();
-    buildNetwork();
-    await loadDay(days.days[1]);                        // busiest day of the year
+    idx = await (await fetch("data/anim/days.json")).json();
+    await Promise.all([loadScript(DECK_URL), loadNetwork()]);
+    const q = new URLSearchParams(location.search);    // ?y=2019&m=5&d=2 for sharing
+    const last = idx.years[idx.years.length - 1];
+    year = +(q.get("y") || last.year); month = +(q.get("m") || 9); dow = +(q.get("d") || 1);
+    if (!findDay(year, month, dow)) ({ month, dow } = (idx.years.find((x) => x.year === year) || last).days[0]);
+    await loadDay(year, findDay(year, month, dow));
     deckgl = new window.deck.DeckGL({
       container: "anim",
       initialViewState: { longitude: -58.445, latitude: -34.612, zoom: innerWidth < 700 ? 10.6 : 11.6, pitch: 0, bearing: 0 },
@@ -337,13 +376,33 @@ export async function openAnim() {
 }
 export function closeAnim() { active = false; if (inited) setPlaying(false); }
 // read-only hook for automated checks
-window.__anim = { get state() { return { active, playing, time, inited, strategy, focusStation, frames, renderMs: Math.round(renderMs), vertices: built ? built.times.length : 0 }; } };
+window.__anim = { get state() { return { active, playing, time, inited, strategy, focusStation, year, month, dow, date: day?.meta.date, trips: day?.nT, frames, renderMs: Math.round(renderMs), vertices: built ? built.times.length : 0 }; } };
 
 function wire() {
   $("aPlay").onclick = () => { if (time >= 86400) time = 0; setPlaying(!playing); };
   $("aSlider").oninput = (e) => { time = +e.target.value; render(true); };
   $("aSpeed").onchange = (e) => { speed = +e.target.value; };
-  $("aDay").onchange = async (e) => { setPlaying(false); await loadDay(days.days[+e.target.value]); render(true); };
+  // year / month / weekday: keep the other two choices when possible
+  const pick = async (y, m, w) => {
+    let d = findDay(y, m, w);
+    if (!d) {                                         // nearest available combination in that year
+      const ys = idx.years.find((x) => x.year === y);
+      d = ys.days.find((x) => x.month === m) || ys.days.find((x) => x.dow === w) || ys.days[0];
+    }
+    year = y; month = d.month; dow = d.dow;
+    $("animLoading").hidden = false;
+    await loadDay(year, d);
+    $("animLoading").hidden = true;
+    relabelAnim(); render(true);
+  };
+  $("aYear").onchange = (e) => pick(+e.target.value, month, dow);
+  $("aMonth").onclick = (e) => { const b = e.target.closest("button"); if (b && !b.disabled) pick(year, +b.dataset.v, dow); };
+  $("aDow").onclick = (e) => { const b = e.target.closest("button"); if (b && !b.disabled) pick(year, month, +b.dataset.v); };
+  $("aYears").onclick = (e) => { const i = Math.floor(e.offsetX / $("aYears")._bw), y = idx.years[i]?.year; if (y && y !== year) pick(y, month, dow); };
+  $("aYears").onmousemove = (e) => {
+    const y = idx.years[Math.floor(e.offsetX / $("aYears")._bw)], d = y && findDay(y.year, month, dow);
+    $("aYears").title = y ? `${y.year}: ${d ? fmt(d.trips) + " " + t("trips") + " · " + d.date : t("a_na")}` : "";
+  };
   $("aStrategy").onclick = (e) => {
     const b = e.target.closest("button");
     if (!b) return;
@@ -357,11 +416,11 @@ function wire() {
   $("aStation").onchange = (e) => {
     focusStation = +e.target.value; buildTrips(); render(true);
     if (focusStation >= 0) {
-      const s = D.stations[focusStation];
+      const s = ydata.st[focusStation];
       deckgl.setProps({ initialViewState: { longitude: s.lon, latitude: s.lat, zoom: 13.2, pitch: 0, bearing: 0, transitionDuration: 800 } });
     }
   };
-  addEventListener("resize", () => inited && drawChart());
+  addEventListener("resize", () => { if (inited) { drawChart(); drawYears(); } });
   addEventListener("keydown", (e) => {
     if (active && e.code === "Space" && !["SELECT", "INPUT"].includes(document.activeElement?.tagName)) { e.preventDefault(); $("aPlay").click(); }
   });

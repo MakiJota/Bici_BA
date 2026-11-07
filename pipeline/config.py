@@ -65,11 +65,19 @@ MAX_SPEED_KMH = 35             # estimated route speed above this is implausible
 MIN_PUBLISH = 10
 MIN_CELL = 30
 
-# Days published for the trip animation (web "Animación" tab). One full week
-# of high spring activity (Mon 20 - Sun 26 Oct, incl. the busiest day of the
-# year, Tue 21 Oct) plus a winter weekday and a winter Saturday for contrast.
-ANIM_DAYS = ["2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24",
-             "2025-10-25", "2025-10-26", "2025-06-18", "2025-06-21"]
+# Trip animation (web "Animación" tab, step 09). For every year with trip data,
+# four months and five weekdays; for each (year, month, weekday) one TYPICAL
+# date is published: not a public holiday or bridge day (Argentine calendar,
+# `holidays` package), with the trip count closest to the median of that
+# weekday in that month. Older years are routed on today's street and
+# bike-lane network (the ciclovías layer has no construction date).
+ANIM_YEARS = range(2011, YEAR + 1)
+ANIM_MONTHS = [2, 5, 9, 11]          # Feb, May, Sep, Nov
+ANIM_DOWS = [1, 2, 4, 5, 6]          # Tue, Wed, Fri, Sat, Sun (Monday = 0)
+for _y in ANIM_YEARS:
+    if _y != YEAR:
+        _ext = "csv" if _y <= 2013 else "zip"
+        SOURCES[f"trips_{_y}"] = f"{CDN}/transporte-y-obras-publicas/bicicletas-publicas/recorridos-realizados-{_y}.{_ext}"
 
 # Hour bands used by the browser cubes: [start, end)
 HOUR_BANDS = [(0, 7), (7, 10), (10, 14), (14, 17), (17, 20), (20, 24)]

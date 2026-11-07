@@ -21,7 +21,7 @@ A previous attempt in R (`Eco_bici/`, kept locally and **excluded from git**: ~4
 3. **OSM bicycle-profile routing as a comparison.** The legacy `dodgr` + OSM `bicycle` profile is reproduced with OSMnx as the *alternative* routing strategy. The primary network is now the official `callejero`, as required.
 4. **Keep only the main connected component** before routing.
 
-5. **Trip animation.** The legacy prototypes (timeline of features with start and end, play slider, path reveal, routes from one station) are implemented together in the *Animación* tab: every trip has an observed start and end, follows its reconstructed route, and can be filtered to one station.
+5. **Trip animation.** The legacy prototypes (timeline of features with start and end, play slider, path reveal, routes from one station) are implemented together in the *Animación* tab: every trip has an observed start and end, follows its reconstructed route, and can be filtered to one station. Like the legacy project, which loaded trips from 2014 onwards, the tab covers every year of published trips.
 
 ## What was not reused
 

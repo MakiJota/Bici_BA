@@ -33,7 +33,8 @@ jobs:
             test -s "web/data/$f" || { echo "missing web/data/$f — run pipeline/08_export_web.py"; exit 1; }
           done
           test -s web/data/anim/days.json || { echo "missing web/data/anim — run pipeline/09_export_animation.py"; exit 1; }
-          echo "route files: $(ls web/data/routes | wc -l), animation days: $(ls web/data/anim/*.bin.gz | wc -l)"
+          test -s web/data/anim/network.bin.gz || { echo "missing web/data/anim/network.bin.gz"; exit 1; }
+          echo "route files: $(ls web/data/routes | wc -l), animation days: $(find web/data/anim -name '20*-*.bin.gz' | wc -l)"
           du -sh web
 
       - name: Syntax-check JavaScript modules

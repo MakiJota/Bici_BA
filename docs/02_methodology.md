@@ -58,7 +58,12 @@ Every trip is assigned to exactly one ordered pair, so directional flows never d
 | Display threshold | any demographic figure based on < 30 trips is shown as `n < 30` |
 | No cross-tabulation | gender and age are never combined in one cube or filter |
 
-**Animation exception (step 09).** To animate trips, the 9 days in `config.ANIM_DAYS` are published per trip with only origin station, destination station and departure / arrival minute. No user id, gender, age or bike model is included. Each trip moves along its inferred route at constant speed between the observed times; it is not a GPS trajectory.
+**Animation exception (step 09).** To animate trips, one *typical day* per year (`config.ANIM_YEARS`), month (`ANIM_MONTHS`: Feb, May, Sep, Nov) and weekday (`ANIM_DOWS`: Tue, Wed, Fri, Sat, Sun) is published per trip with only origin station, destination station and departure / arrival minute. No user id, gender, age or bike model is included.
+
+- *Typical day*: among the dates of that weekday in that month that are not Argentine public holidays or bridge days (`holidays` package), the one whose trip count is closest to the median. Months with fewer than two such dates in the data are skipped.
+- *Stations* come from each year's own records (they were added and relocated over time). The 2014 file publishes station names only; coordinates are matched by name from neighbouring years, and unmatched stations are dropped.
+- *Routes*: each year's station pairs are routed with step 06's method on **today's** network. The ciclovías layer has no construction date, so the "on a bike lane" share of early years is an upper bound.
+- Each trip moves along its inferred route at constant speed between the observed times; it is not a GPS trajectory.
 
 ## 8. Browser data model (step 08)
 

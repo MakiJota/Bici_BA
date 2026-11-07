@@ -33,7 +33,7 @@ let built = null;                                      // TripsLayer arrays for 
 let focusStation = -1;                                 // -1 = all stations
 let strategy = "I", time = 7 * 3600, playing = false, speed = 600, lastFrame = null, shownBin = -1, shownMode = null;
 const show = { trips: true, ends: true, net: true, comunas: true };
-let netMode = "bin", netColors = null, lastStats = 0;
+let netMode = "bin", netColors = null, lastStats = 0, netKey = 0, shownBuild = -1;
 
 function loadScript(src) {
   return new Promise((res, rej) => {
@@ -189,38 +189,31 @@ function rampColor(x) {
   const i = Math.min(Math.floor(s), r.length - 2), f = s - i;
   return [0, 1, 2].map((k) => Math.round(r[i][k] + (r[i + 1][k] - r[i][k]) * f));
 }
+// one colour per street segment; only this lookup changes when the 15-min window
+// moves (the path geometry is tessellated once and never re-uploaded)
 function fillNetColors(bin) {
-  const cols = new Uint8Array(net.nv * 4), mx = netMode === "bin" ? built.maxBin : built.maxCum;
-  const lut = new Array(net.K);
+  const mx = netMode === "bin" ? built.maxBin : built.maxCum, lut = new Array(net.K);
   for (let k = 0; k < net.K; k++) {
     let n = 0;
     if (netMode === "bin") n = built.cnt[k * NB + bin];
     else for (let b = 0; b <= bin; b++) n += built.cnt[k * NB + b];
-    lut[k] = n > 0 ? rampColor(Math.log1p(n) / Math.log1p(mx)) : null;
+    lut[k] = n > 0 ? rampColor(Math.log1p(n) / Math.log1p(mx)) : CONFIG.roadBase;
   }
-  for (let v = 0; v < net.nv; v++) {
-    const c = lut[net.vSeg[v]] || CONFIG.roadBase, o = 4 * v;
-    cols[o] = c[0]; cols[o + 1] = c[1]; cols[o + 2] = c[2]; cols[o + 3] = 255;
-  }
-  netColors = cols;
+  netColors = lut;
 }
 function layers() {
   const { TripsLayer, PathLayer, ScatterplotLayer, GeoJsonLayer, DataFilterExtension } = window.deck;
   const bin = Math.min(NB - 1, Math.floor(time / CONFIG.binS));
   const netOn = show.net || !show.trips;
-  if (netOn && (bin !== shownBin || netMode !== shownMode || !net.data || net.dataOn !== netOn)) {
-    fillNetColors(bin); shownBin = bin; shownMode = netMode;
-    net.data = { length: net.K, startIndices: net.start,
-      attributes: { getPath: { value: net.path, size: 2 }, getColor: { value: netColors, size: 4, normalized: true } } };
-    net.dataOn = true;
-  } else if (!netOn && net.dataOn !== false) {
-    net.data = { length: net.K, startIndices: net.start, attributes: { getPath: { value: net.path, size: 2 } } };
-    net.dataOn = false;
-  }
+  net.data ??= { length: net.K, startIndices: net.start, attributes: { getPath: { value: net.path, size: 2 } } };
+  if (netOn && (bin !== shownBin || netMode !== shownMode || shownBuild !== built.version)) {
+    fillNetColors(bin); shownBin = bin; shownMode = netMode; shownBuild = built.version; netKey++;
+  } else if (!netOn && shownBin !== -2) { netColors = null; shownBin = -2; netKey++; }
   const additive = { depthTest: false, blend: true, blendFunc: [770, 1, 1, 1], blendEquation: 32774 };
   const out = [new PathLayer({
     id: "net", data: net.data,
-    _pathType: "open", getColor: CONFIG.roadBase, widthUnits: "pixels", getWidth: CONFIG.roadWidthPx,
+    _pathType: "open", widthUnits: "pixels", getWidth: CONFIG.roadWidthPx,
+    getColor: (_, { index }) => (netColors ? netColors[index] : CONFIG.roadBase), updateTriggers: { getColor: netKey },
   })];
   if (show.comunas) out.push(new GeoJsonLayer({ id: "comunas", data: D.comunas, stroked: true, filled: false,
     getLineColor: [150, 150, 150, 140], lineWidthUnits: "pixels", getLineWidth: 1 }));
@@ -294,7 +287,8 @@ function frame(ts) {
   if (!active) { lastFrame = null; return; }
   frames++;
   if (playing) {
-    if (lastFrame !== null) time += ((ts - lastFrame) / 1000) * speed;
+    // a slow frame advances the clock by at most 1/15 s of playback, so trails never jump
+    if (lastFrame !== null) time += (Math.min(ts - lastFrame, 66) / 1000) * speed;
     if (time >= 86400) { time = 86400; setPlaying(false); }
     const t0 = performance.now();
     render();

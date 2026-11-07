@@ -101,6 +101,28 @@ export function routeSegments(tree, d) {
   return out.reverse();
 }
 
+// Trips per street segment for the CURRENT filters (time, area, origin,
+// destination): every station pair's filtered count is laid along its route
+// for the chosen strategy ("i" | "s"). Needs the route trees of all origins
+// (≈ 6 MB, loaded once). Without spatial filters and with the primary
+// strategy the precomputed per-segment cube gives the same result faster.
+let allRoutes = null;
+export async function streetCounts(agg, tag, state = S) {
+  if (tag === "i" && !state.origin && !state.dest && !state.area) return segmentCounts(state);
+  allRoutes ??= Promise.all(D.stations.map((s) => loadRoutes(s.i)));
+  const trees = await allRoutes;
+  const out = new Float64Array(D.K);
+  for (let p = 0; p < D.P; p++) {
+    const c = agg.pairN[p], o = D.pO[p], d = D.pD[p];
+    if (!c || o === d || !trees[o]) continue;
+    const tr = trees[o][tag];
+    let k = tr.byDest.get(d);
+    if (k === undefined) continue;
+    while (k !== 65535) { out[D.edgeSeg[tr.edge[k]]] += c; k = tr.parent[k]; }
+  }
+  return out;
+}
+
 // ---------------- Units ----------------
 // A unit reference is "s:<station index>", "b:<barrio name>" or "c:<comuna>".
 export function unitStations(ref) {

@@ -1,7 +1,7 @@
 // Entry point: loads data, wires shared filters, tabs and language, keeps map and report in sync.
 import { D, S, aggregate, aggregateDemo, demoActive, loadCore, loadDemo, resetState } from "./data.js";
 import { applyStatic, fmt, getLang, setLang, t } from "./i18n.js";
-import { focusStation, initMap, resetMapSelection, resizeMap, setAggregate, setLabels, updateMap } from "./map.js";
+import { fitUnit, focusStation, initMap, resetMapSelection, resizeMap, setAggregate, setLabels, updateMap } from "./map.js";
 import { initReport, relabelReport, renderReport } from "./report.js";
 import { renderMethod } from "./method.js";
 import { closeAnim, openAnim, relabelAnim } from "./anim.js";
@@ -70,12 +70,11 @@ function buildFilters() {
   };
   segControl("fDaytype", (v) => { S.daytype = v; update(); });
   segControl("fLevel", (v) => { S.level = v; resetMapSelection(); update(); });
-  segControl("fTopN", (v) => { S.topN = +v; update(false); });
   segControl("fStrategy", (v) => { S.strategy = v; update(false); });
   $("fLabels").onchange = () => { S.labels = $("fLabels").checked; setLabels(); };
-  $("fArea").onchange = () => { S.area = $("fArea").value; update(); };
-  $("fOrigin").onchange = () => { S.origin = $("fOrigin").value; update(); };
-  $("fDest").onchange = () => { S.dest = $("fDest").value; update(); };
+  $("fArea").onchange = () => { S.area = $("fArea").value; update(); fitUnit(S.area || S.area || S.origin || S.dest); };
+  $("fOrigin").onchange = () => { S.origin = $("fOrigin").value; update(); fitUnit(S.origin || S.area || S.origin || S.dest); };
+  $("fDest").onchange = () => { S.dest = $("fDest").value; update(); fitUnit(S.dest || S.area || S.origin || S.dest); };
   $("fGender").onchange = async () => { S.gender = $("fGender").value; if (S.gender) { S.age = ""; $("fAge").value = ""; } await update(); };
   $("fAge").onchange = async () => { S.age = $("fAge").value; if (S.age) { S.gender = ""; $("fGender").value = ""; } await update(); };
   $("fReset").onclick = () => { resetState(); resetMapSelection(); buildFilters(); update(); };
@@ -95,7 +94,7 @@ function segControl(id, fn) {
 }
 function syncControls() {
   const set = (id, v) => $(id).querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.v === String(v)));
-  set("fDaytype", S.daytype); set("fLevel", S.level); set("fTopN", S.topN); set("fStrategy", S.strategy);
+  set("fDaytype", S.daytype); set("fLevel", S.level); set("fStrategy", S.strategy);
   $("fArea").value = S.area; $("fOrigin").value = S.origin; $("fDest").value = S.dest;
   $("fGender").value = S.gender; $("fAge").value = S.age; $("fLabels").checked = S.labels;
 }

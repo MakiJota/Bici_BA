@@ -104,11 +104,18 @@
         <label><input type="checkbox" data-layer="comunas" checked> <span data-i18n="ly_comunas">Comunas</span></label>
         <label><input type="checkbox" data-layer="infra"> <span data-i18n="ly_infra">Infraestructura ciclista</span></label>
         <div class="sub">
-          <label data-i18n="topn">Flujos principales</label>
-          <div class="seg small" id="fTopN">
-            <button data-v="10">10</button><button data-v="20" class="on">20</button><button data-v="50">50</button>
+          <div id="flowBox">
+            <label data-i18n="topn">Flujos principales</label>
+            <div id="flowHist"></div>
+            <p class="rh-info" id="flowInfo"></p>
+            <p class="rh-help" data-i18n="range_help">Arrastrá los extremos o hacé clic en una barra; doble clic para ver todo.</p>
+            <label class="inline"><input type="checkbox" id="fLabels"> <span data-i18n="show_labels">Mostrar cantidades</span></label>
           </div>
-          <label class="inline"><input type="checkbox" id="fLabels"> <span data-i18n="show_labels">Mostrar cantidades</span></label>
+          <div id="streetBox" hidden>
+            <label data-i18n="street_range">Viajes inferidos por tramo</label>
+            <div id="streetHist"></div>
+            <p class="rh-info" id="streetInfo"></p>
+          </div>
           <label data-i18n="strategy">Supuesto de ruteo</label>
           <div class="seg small" id="fStrategy">
             <button data-v="i" class="on" data-i18n="st_infra">Prioriza ciclovías</button>
@@ -189,8 +196,16 @@
       <div id="anim"></div>
       <div class="a-loading" id="animLoading" hidden data-i18n="loading">Cargando datos…</div>
       <div class="a-panel" id="aPanel">
-        <h3 data-i18n="a_title">Un día de viajes</h3>
-        <select id="aDay" aria-label="day"></select>
+        <h3 data-i18n="a_title">Un día típico de viajes</h3>
+        <div class="a-sub" data-i18n="a_year">Año</div>
+        <select id="aYear" aria-label="year"></select>
+        <div class="a-sub" data-i18n="a_month">Mes</div>
+        <div class="seg small dark" id="aMonth"></div>
+        <div class="a-sub" data-i18n="a_dow">Día de la semana</div>
+        <div class="seg small dark" id="aDow"></div>
+        <p class="a-date" id="aDate"></p>
+        <canvas id="aYears" class="a-years" title=""></canvas>
+        <p class="a-hint" data-i18n="a_years_hint">El mismo día típico en cada año · clic para cambiar de año</p>
         <div class="a-sub" data-i18n="a_station">Estación (opcional)</div>
         <select id="aStation" aria-label="station"></select>
         <div class="a-sub" data-i18n="a_strategy">Ruta reconstruida</div>

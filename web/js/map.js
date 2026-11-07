@@ -1,9 +1,13 @@
 // Section A — interactive mobility map (MapLibre GL JS).
-import { D, S, aggregate, aggregateDemo, demoActive, levelOf, loadRoutes, loadStreets, odMatrix, routeSegments, segmentCounts, unitStations } from "./data.js";
+import { D, S, aggregate, aggregateDemo, demoActive, levelOf, loadRoutes, loadStreets, odMatrix, routeSegments, segmentCounts, streetCounts, unitStations } from "./data.js";
 import { fmt, pct, t } from "./i18n.js";
 import { css, plotMini } from "./charts.js";
+import { rangeHist } from "./rangehist.js";
 
 let map, agg = null, segCounts = null, focus = null, ready = false, selectedStation = null;
+let flowHist = null, streetHist = null, flowLevel = null, shownFlows = [];
+const MAX_ARROWS = 1500;                               // drawing cap (strongest first)
+const MAX_DEFAULT_ROUTES = 30;
 const layerOn = { stations: true, od: true, routes: true, streets: false, barrios: false, comunas: true, infra: false };
 const EMPTY = { type: "FeatureCollection", features: [] };
 
@@ -12,9 +16,26 @@ const basemap = () => dark()
   ? "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json"
   : "https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json";
 
-export function initMap(onSelectUnit) {
+// CARTO basemap reduced to land, water and parks: roads, rail and buildings are
+// removed so that stations, flows and the routed street network stand out.
+async function cleanBasemap() {
+  const style = await (await fetch(basemap())).json();
+  style.layers = style.layers.filter((l) => !["roads", "buildings"].includes(l["source-layer"]) &&
+    !/^(road|bridge|tunnel|rail|aeroway|boundary_(county|state))/.test(l.id));
+  return style;
+}
+// Heat ramp for street intensity (few -> many trips), legible on either theme.
+const HEAT_DARK = ["#3a0e0e", "#6e1717", "#a3201d", "#d6331f", "#ff5a36", "#ffa07a", "#ffe0cc"];
+const HEAT_LIGHT = ["#fde0da", "#f9b3a5", "#f07c69", "#e04535", "#bf1f1a", "#8c1010", "#520808"];
+const heat = () => (dark() ? HEAT_DARK : HEAT_LIGHT);
+const heatAt = (x) => { const r = heat(); return r[Math.min(r.length - 1, Math.max(0, Math.round(x * (r.length - 1))))]; };
+
+export async function initMap(onSelectUnit) {
+  const style = await cleanBasemap().catch(() => basemap());
+  flowHist = rangeHist(document.getElementById("flowHist"), { accent: () => css("--c-od"), onChange: () => { drawOD(); drawRoutes(); legend(); } });
+  streetHist = rangeHist(document.getElementById("streetHist"), { colors: (i, n) => heatAt(i / Math.max(1, n - 1)), onChange: () => drawStreets() });
   map = new maplibregl.Map({
-    container: "map", style: basemap(), bounds: [[-58.535, -34.708], [-58.335, -34.528]],
+    container: "map", style, bounds: [[-58.535, -34.708], [-58.335, -34.528]],
     fitBoundsOptions: { padding: 24 }, minZoom: 9.5, maxZoom: 17,
     attributionControl: { compact: true, customAttribution: D.meta.attribution },
   });
@@ -22,7 +43,7 @@ export function initMap(onSelectUnit) {
   map.on("error", (e) => console.warn("map error:", e.error?.message || e));
   map.on("load", () => {
     console.info("map loaded");
-    const ink = css("--ink"), mid = css("--ink-3");
+    const ink = css("--ink"), mid = css("--ink-3"), stc = css("--c-station"), odc = css("--c-od"), bike = css("--c-bike");
     map.addSource("barrios", { type: "geojson", data: D.barrios });
     map.addSource("comunas", { type: "geojson", data: D.comunas });
     map.addSource("infra", { type: "geojson", data: EMPTY });
@@ -38,26 +59,28 @@ export function initMap(onSelectUnit) {
         paint: { "line-color": lv === "comunas" ? ink : mid, "line-width": lv === "comunas" ? 1.1 : 0.6, "line-opacity": 0.7 } });
     }
     map.addLayer({ id: "infra", type: "line", source: "infra",
-      paint: { "line-color": ink, "line-width": 1.2, "line-dasharray": [1, 1.5], "line-opacity": 0.65 } });
+      layout: { "line-cap": "round" }, paint: { "line-color": bike, "line-width": ["interpolate", ["linear"], ["zoom"], 11, 1.3, 15, 3], "line-opacity": 0.9 } });
     map.addLayer({ id: "streets", type: "line", source: "streets", layout: { "line-cap": "round" },
-      paint: { "line-color": ink, "line-opacity": ["case", ["boolean", ["feature-state", "hl"], false], 1, 0.75],
-        "line-width": ["interpolate", ["linear"], ["coalesce", ["feature-state", "w"], 0], 0, 0, 1, 7] } });
+      paint: { "line-color": ["interpolate", ["linear"], ["coalesce", ["feature-state", "x"], 0], ...heat().flatMap((c, i, a) => [i / (a.length - 1), c])],
+        "line-opacity": ["case", ["boolean", ["feature-state", "on"], false], ["interpolate", ["linear"], ["coalesce", ["feature-state", "x"], 0], 0, 0.35, 0.6, 0.75, 1, 1], 0],
+        "line-width": ["interpolate", ["linear"], ["coalesce", ["feature-state", "x"], 0], 0, 0.4, 0.5, 0.9, 0.8, 2.2, 1, 5] } });
     map.addLayer({ id: "routes-s", type: "line", source: "routes", filter: ["==", ["get", "s"], "s"],
       paint: { "line-color": mid, "line-width": ["get", "w"], "line-dasharray": [2, 1.5], "line-opacity": 0.9 } });
     map.addLayer({ id: "routes-i", type: "line", source: "routes", filter: ["==", ["get", "s"], "i"], layout: { "line-cap": "round" },
       paint: { "line-color": ink, "line-width": ["get", "w"], "line-opacity": 0.85 } });
     map.addLayer({ id: "od", type: "line", source: "od", layout: { "line-cap": "round" },
-      paint: { "line-color": ink, "line-width": ["get", "w"], "line-opacity": ["get", "a"] } });
-    map.addLayer({ id: "heads", type: "fill", source: "heads", paint: { "fill-color": ink, "fill-opacity": ["get", "a"] } });
+      paint: { "line-color": odc, "line-width": ["get", "w"], "line-opacity": ["get", "a"] } });
+    map.addLayer({ id: "heads", type: "fill", source: "heads", paint: { "fill-color": odc, "fill-opacity": ["get", "a"] } });
     map.addLayer({ id: "od-labels", type: "symbol", source: "od", layout: {
       "symbol-placement": "line-center", "text-field": ["get", "label"], "text-size": 11, "text-font": ["Open Sans Regular", "Noto Sans Regular"],
       "visibility": "none" }, paint: { "text-color": ink, "text-halo-color": css("--bg"), "text-halo-width": 1.6 } });
     // stations sit below routes and flows so arrows stay readable
     map.addLayer({ id: "stations", type: "circle", source: "stations", paint: {
-      "circle-radius": ["get", "r"], "circle-color": ["case", ["get", "sel"], ink, css("--bg")],
-      "circle-stroke-color": ink, "circle-stroke-width": ["case", ["get", "sel"], 2, 0.8],
-      "circle-opacity": ["get", "op"], "circle-stroke-opacity": ["get", "op"] } }, "routes-s");
+      "circle-radius": ["get", "r"], "circle-color": stc,
+      "circle-stroke-color": ["case", ["get", "sel"], ink, stc], "circle-stroke-width": ["case", ["get", "sel"], 2.5, 0.9],
+      "circle-opacity": ["*", ["get", "op"], 0.32], "circle-stroke-opacity": ["get", "op"] } }, "routes-s");
 
+    map.moveLayer("infra", "routes-s");                 // bike lanes stay visible above street intensity
     // interactions
     map.on("click", "stations", (e) => selectStation(e.features[0].properties.i));
     map.on("click", "streets", (e) => showStreet(e.features[0]));
@@ -114,17 +137,33 @@ function applyLayerVisibility() {
   vis("od", layerOn.od); vis("heads", layerOn.od); vis("od-labels", layerOn.od && S.labels);
   vis("routes-i", layerOn.routes); vis("routes-s", layerOn.routes);
   vis("streets", layerOn.streets); vis("infra", layerOn.infra);
+  if (map.getLayer("infra")) {                           // beside, not over, the street intensity
+    map.setPaintProperty("infra", "line-offset", layerOn.streets ? 3 : 0);
+    map.setPaintProperty("infra", "line-width", layerOn.streets ? 1.1 : ["interpolate", ["linear"], ["zoom"], 11, 1.3, 15, 3]);
+  }
+  document.getElementById("flowBox").hidden = !layerOn.od;
+  document.getElementById("streetBox").hidden = !layerOn.streets;
   vis("barrios-line", layerOn.barrios || S.level === "barrio"); vis("barrios-fill", S.level === "barrio");
   vis("comunas-line", layerOn.comunas); vis("comunas-fill", S.level === "comuna");
 }
 
-export function setAggregate(a) { agg = a; }
+let aggVersion = 0;
+export function setAggregate(a) { if (a !== agg) a.v ??= ++aggVersion; agg = a; }
+// zoom to the stations of a filter unit ("s:", "b:", "c:")
+export function fitUnit(ref) {
+  if (!ready) return;
+  const m = unitStations(ref);
+  if (!m) { map.fitBounds([[-58.535, -34.708], [-58.335, -34.528]], { padding: 24, duration: 700 }); return; }
+  const b = new maplibregl.LngLatBounds();
+  D.stations.forEach((s) => m[s.i] && b.extend([s.lon, s.lat]));
+  if (!b.isEmpty()) map.fitBounds(b, { padding: 120, maxZoom: 13, duration: 700 });
+}
 export async function updateMap() {
   if (!ready) return;
   agg ??= demoActive() ? aggregateDemo() : aggregate();
   applyLayerVisibility();
   drawStations(); drawOD(); drawRoutes();
-  if (layerOn.streets) { await ensureStreets(); drawStreets(); }
+  if (layerOn.streets) { await ensureStreets(); drawStreets(true); }
   legend();
   if (selectedStation != null) selectStation(selectedStation, true);
 }
@@ -191,16 +230,30 @@ function topFlows() {
     list.push({ o, d, v, rev: M[d * U + o], dur: Du[o * U + d] / v });
   }
   list.sort((a, b) => b.v - a.v);
-  return { lvl, L, list: list.slice(0, S.topN), total: agg.n };
+  // distribution of every flow -> histogram; the selected range picks the arrows
+  // the range resets to the strongest flows whenever filters or level change
+  const levelKey = `${lvl}|${fu}|${fs}|${agg.v}`, vals = list.map((f) => f.v);
+  if (levelKey !== flowLevel) { flowLevel = levelKey; flowHist.setTop(vals, lvl === "station" ? 150 : 60); }
+  else flowHist.set(vals);
+  const { lo, hi } = flowHist.range, total = agg.n;
+  const inRange = list.filter((f) => f.v >= lo && f.v < hi);
+  const trips = inRange.reduce((s, f) => s + f.v, 0);
+  document.getElementById("flowInfo").textContent =
+    `${fmt(Math.min(inRange.length, MAX_ARROWS))} ${t("flows_shown")}` + (inRange.length > MAX_ARROWS ? ` (${t("of")} ${fmt(inRange.length)})` : "") +
+    ` · ${pct(trips / (total || 1), 1)} ${t("of_trips")}`;
+  return { lvl, L, list: inRange.slice(0, MAX_ARROWS), total };
 }
 function drawOD() {
   if (!ready || !agg) return;
   const { lvl, L, list, total } = topFlows();
   const max = list[0]?.v || 1, lines = [], heads = [];
+  shownFlows = list;
+  const dense = list.length > 200;
   for (const f of list) {
     const a = anchor(lvl, f.o), b = anchor(lvl, f.d);
     if (!a || !b) continue;
-    const w = 1 + 11 * (f.v / max), pts = curve(a, b), alpha = 0.35 + 0.55 * (f.v / max);
+    const x = Math.pow(f.v / max, 0.7);
+    const w = (dense ? 0.6 : 1) + (dense ? 6 : 10) * x, pts = curve(a, b), alpha = (dense ? 0.25 : 0.4) + 0.55 * x;
     const tip = `<b>${L.name(f.o)} → ${L.name(f.d)}</b><br>${fmt(f.v)} ${t("trips")} (${pct(f.v / total, 2)})<br>` +
       `${L.name(f.d)} → ${L.name(f.o)}: ${fmt(f.rev)}<br>${t("net")}: ${fmt(f.v - f.rev)}<br>${t("k_dur_mean")}: ${fmt(f.dur / 60, 1)} ${t("min")}`;
     lines.push({ type: "Feature", geometry: { type: "LineString", coordinates: pts }, properties: { w, a: alpha, tip, label: fmt(f.v) } });
@@ -211,13 +264,28 @@ function drawOD() {
 }
 
 // ---------------- Streets ----------------
-function drawStreets() {
-  const useShort = S.strategy === "s";
-  segCounts = useShort ? null : segmentCounts();
-  let max = 0;
-  const vals = new Float64Array(D.K);
-  D.segs.features.forEach((f, k) => { vals[k] = useShort ? f.properties.tot_s : segCounts[k]; if (vals[k] > max) max = vals[k]; });
-  for (let k = 0; k < D.K; k++) map.setFeatureState({ source: "streets", id: k }, { w: max ? Math.pow(vals[k] / max, 0.6) : 0 });
+let streetVals = null, streetReq = 0, streetNote = "";
+async function drawStreets(recount = false) {
+  if (!D.segs || !layerOn.streets) return;
+  if (recount || !streetVals) {
+    const req = ++streetReq;
+    document.getElementById("streetInfo").textContent = t("computing");
+    // gender / age filters exist only at comuna level (privacy): streets then follow time filters only
+    const vals = agg.demo ? segmentCounts() : await streetCounts(agg, S.strategy);
+    if (req !== streetReq) return;
+    streetNote = agg.demo ? " · " + t("streets_no_demo") : "";
+    segCounts = streetVals = vals;
+    streetHist.set(Array.from(streetVals).filter((v) => v > 0));
+  }
+  // colour = class of the 1-2-5 log scale (same classes as the legend); hidden outside the range
+  const { lo, hi } = streetHist.range, nb = streetHist.bins();
+  let n = 0;
+  for (let k = 0; k < D.K; k++) {
+    const v = streetVals[k], on = v > 0 && v >= lo && v < hi;
+    if (on) n++;
+    map.setFeatureState({ source: "streets", id: k }, { on, x: v > 0 ? streetHist.binOf(v) / Math.max(1, nb - 1) : 0 });
+  }
+  document.getElementById("streetInfo").textContent = `${fmt(n)} ${t("segments_shown")}${streetNote}`;
 }
 
 // ---------------- Routes ----------------
@@ -225,7 +293,8 @@ async function drawRoutes() {
   if (!ready) return;
   const src = map.getSource("routes");
   const origin = selectedStation;                       // fixed for this request
-  if (origin == null || agg.demo) { src.setData(EMPTY); return; }
+  if (!layerOn.routes || agg.demo) { src.setData(EMPTY); return; }
+  if (origin == null) return drawTopRoutes(src);
   await loadStreets();
   const tree = await loadRoutes(origin);
   if (!tree || origin !== selectedStation) { if (selectedStation == null) src.setData(EMPTY); return; }
@@ -244,6 +313,35 @@ async function drawRoutes() {
     const coords = segs.map((k) => D.segs.features[k]?.geometry.coordinates).filter(Boolean);
     if (coords.length) feats.push({ type: "Feature", geometry: { type: "MultiLineString", coordinates: coords },
       properties: { s: tag, w: tag === "i" ? 1.5 + 4 * Math.sqrt(v / max) : 1.4, d } });
+  }
+  src.setData({ type: "FeatureCollection", features: feats });
+}
+
+// Without a selected station: routes of the strongest station pairs among the
+// flows currently selected (station level) or touching the focused unit.
+let routeReq = 0;
+async function drawTopRoutes(src) {
+  const req = ++routeReq;
+  await loadStreets();
+  let pairs = [];
+  if (S.level === "station") pairs = shownFlows.slice(0, MAX_DEFAULT_ROUTES).map((f) => ({ o: f.o, d: f.d, v: f.v }));
+  else {
+    const inUnit = (i) => !focus || (focus[0] === "c" ? `c:${D.stations[i].comuna}` : `b:${D.stations[i].barrio}`) === focus;
+    for (let p = 0; p < D.P; p++) {
+      const o = D.pO[p], d = D.pD[p], v = agg.pairN[p];
+      if (v && o !== d && (inUnit(o) || inUnit(d))) pairs.push({ o, d, v });
+    }
+    pairs.sort((a, b) => b.v - a.v); pairs = pairs.slice(0, MAX_DEFAULT_ROUTES);
+  }
+  const trees = await Promise.all([...new Set(pairs.map((p) => p.o))].map(async (o) => [o, await loadRoutes(o)]));
+  if (req !== routeReq || selectedStation != null) return;
+  const tm = new Map(trees), max = pairs[0]?.v || 1, feats = [];
+  for (const { o, d, v } of pairs) for (const tag of ["s", "i"]) {
+    const tree = tm.get(o);
+    if (!tree) continue;
+    const coords = routeSegments(tree[tag], d).map((k) => D.segs.features[k]?.geometry.coordinates).filter(Boolean);
+    if (coords.length) feats.push({ type: "Feature", geometry: { type: "MultiLineString", coordinates: coords },
+      properties: { s: tag, w: tag === "i" ? 1.2 + 3.5 * Math.sqrt(v / max) : 1.2, d } });
   }
   src.setData({ type: "FeatureCollection", features: feats });
 }
@@ -293,19 +391,18 @@ async function selectStation(i, silent = false) {
 function showStreet(f) {
   const k = f.properties.k ?? f.id;
   const p = D.segs.features[k].properties;
-  const useShort = S.strategy === "s";
-  const v = useShort ? p.tot_s : segCounts?.[k] ?? 0;
+  const v = segCounts?.[k] ?? 0;
   const base = k * 144, mon = new Array(12).fill(0), band = new Array(6).fill(0);
   for (let key = 0; key < 144; key++) {
     const c = D.segFlows[base + key];
     mon[Math.floor(key / 12)] += c; band[key % 6] += c;
   }
-  const tot = useShort ? D.meta.routing.routable_trips : (agg.demo ? D.meta.routing.routable_trips : agg.n - agg.round);
+  const tot = agg.demo ? D.meta.routing.routable_trips : agg.n - agg.round;
   openDetail(`<h3>${p.name}</h3><p class="meta">${p.tipo} · ${p.infra ? t("infra_yes") : t("infra_no")}</p>
     <div class="stat-grid"><div><b>${fmt(v)}</b><span>${t("inferred_trips")}</span></div>
     <div><b>${pct(v / tot, 2)}</b><span>${t("share_routed")}</span></div></div>
     <h4>${t("by_band")}</h4><div class="mini" id="miniBand"></div><h4>${t("by_month")}</h4><div class="mini" id="miniMon"></div>
-    <p class="fnote">${t("routes_disclaimer")}${useShort ? " " + t("strategy_note_short") : ""}</p>`);
+    <p class="fnote">${t("routes_disclaimer")}</p>`);
   const hb = D.meta.hour_bands.map(([a, b]) => `${a}–${b}h`);
   plotMini("miniBand", [{ x: hb, y: band, type: "bar", marker: { color: css("--ink") } }], {});
   plotMini("miniMon", [{ x: t("months"), y: mon, type: "bar", marker: { color: css("--ink") } }], {});
@@ -329,10 +426,11 @@ function showUnit(ref) {
 }
 
 function legend() {
-  const parts = [];
-  if (layerOn.stations && !agg.demo) parts.push("○ " + t("legend_st"));
-  if (layerOn.od) parts.push("→ " + t("legend_od"));
-  if (layerOn.streets) parts.push("━ " + t("legend_streets") + (S.strategy === "s" ? ` (${t("strategy_note_short")})` : ""));
+  const parts = [], sw = (v) => `<i class="sw" style="background:${css(v)}"></i>`;
+  if (layerOn.stations && !agg.demo) parts.push(sw("--c-station") + t("legend_st"));
+  if (layerOn.od) parts.push(sw("--c-od") + t("legend_od"));
+  if (layerOn.routes && !agg.demo) parts.push(`<i class="sw ln"></i>` + (selectedStation != null ? t("legend_routes_st") : t("legend_routes_top")));
+  if (layerOn.infra) parts.push(sw("--c-bike") + t("ly_infra"));
   if (agg.demo) parts.push(t("demo_level"));
   document.getElementById("legend").innerHTML = parts.join("<br>");
 }

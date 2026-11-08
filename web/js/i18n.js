@@ -2,7 +2,7 @@
 const STR = {
   es: {
     title: "Bici BA", subtitle: "Movilidad en bicicleta pública · Buenos Aires 2025",
-    nav_map: "Mapa de movilidad", nav_report: "Informe de movilidad", nav_method: "Metodología",
+    about: "Acerca de", nav_map: "Mapa de movilidad", nav_report: "Informe de movilidad", nav_method: "Metodología",
     filters: "Filtros", loading: "Cargando datos…",
     f_period: "Período (meses)", f_daytype: "Tipo de día", f_hours: "Franja horaria", f_level: "Nivel geográfico",
     f_area: "Ámbito (origen o destino)", f_origin: "Origen", f_dest: "Destino",
@@ -81,7 +81,7 @@ const STR = {
   },
   en: {
     title: "Bici BA", subtitle: "Public bike-sharing mobility · Buenos Aires 2025",
-    nav_map: "Mobility map", nav_report: "Mobility report", nav_method: "Methodology",
+    about: "About", nav_map: "Mobility map", nav_report: "Mobility report", nav_method: "Methodology",
     filters: "Filters", loading: "Loading data…",
     f_period: "Period (months)", f_daytype: "Day type", f_hours: "Time of day", f_level: "Geographic level",
     f_area: "Area (origin or destination)", f_origin: "Origin", f_dest: "Destination",

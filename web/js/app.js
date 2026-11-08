@@ -119,6 +119,7 @@ function switchView(v) {
   history.replaceState(null, "", v === "map" ? location.pathname : `#${v}`);
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.view === v));
   document.querySelectorAll(".view").forEach((s) => s.classList.toggle("active", s.id === `view-${v}`));
+  document.body.dataset.view = v;
   const noFilters = v === "method" || v === "anim";       // the animation has its own controls
   $("filters").style.display = noFilters ? "none" : "";
   document.querySelector("main").style.left = noFilters ? "0" : "";
@@ -130,6 +131,9 @@ function switchView(v) {
 }
 function wireTabs() {
   document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => switchView(b.dataset.view)));
+  const about = document.getElementById("about");
+  document.getElementById("aboutBtn").onclick = () => about.showModal();
+  about.addEventListener("click", (e) => { if (e.target === about || e.target.closest("[data-close]")) about.close(); });
   document.querySelectorAll(".lang-btn").forEach((b) => b.addEventListener("click", async () => {
     setLang(b.dataset.lang);
     buildFilters(); relabelReport(); renderMethod(); relabelAnim();

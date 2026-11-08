@@ -26,6 +26,7 @@
       <button role="tab" class="tab" data-view="anim" data-i18n="nav_anim">Animación</button>
       <button role="tab" class="tab" data-view="method" data-i18n="nav_method">Metodología</button>
     </nav>
+    <button class="about-btn" id="aboutBtn" type="button" aria-haspopup="dialog"><span aria-hidden="true">ⓘ</span> <span data-i18n="about">Acerca de</span></button>
     <div class="lang" role="group" aria-label="Idioma / Language">
       <button class="lang-btn active" data-lang="es">ES</button>
       <button class="lang-btn" data-lang="en">EN</button>
@@ -259,8 +260,34 @@
   <div class="loading" id="loading"><div class="spinner"></div><p data-i18n="loading">Cargando datos…</p></div>
   <footer class="foot" id="foot"></footer>
 
+  <dialog class="about" id="about" aria-labelledby="aboutTitle">
+    <button class="about-x" type="button" aria-label="Cerrar / Close" data-close>×</button>
+    <div class="about-head">
+      <img src="img/jonathan.jpg" alt="Jonathan Cohen" width="96" height="96">
+      <div>
+        <h2 id="aboutTitle"><span class="only-es">¡Hola! Soy Jonathan.</span><span class="only-en">Hi! My name is Jonathan.</span></h2>
+        <p class="only-es">Soy economista y trabajo en analítica urbana.</p>
+        <p class="only-en">I'm an economist working in urban analytics.</p>
+      </div>
+    </div>
+    <p class="only-es">Este es un mapa de las bicicletas de mi ciudad natal, Buenos Aires, y junta dos cosas que me gustan mucho: Buenos Aires y las bicis.</p>
+    <p class="only-en">This is a map of the bikes in my hometown, Buenos Aires. It brings together two things I really like: Buenos Aires and bikes.</p>
+    <p class="only-es">Es mi aporte para hacer de Buenos Aires una ciudad mejor. Ojalá llegue a las personas indicadas y sirva para mejorar y crear más ciclovías.</p>
+    <p class="only-en">It's my contribution to making Buenos Aires a better city. I hope it reaches the right people and helps them improve the network and build more cycle paths.</p>
+    <h3><span class="only-es">Contacto</span><span class="only-en">Contact</span></h3>
+    <ul class="about-links">
+      <li><span class="k">Email</span><a href="mailto:cohen.jota@gmail.com">cohen.jota@gmail.com</a></li>
+      <li><span class="k">Nodal</span><a href="mailto:jonathan@nodal.se">jonathan@nodal.se</a></li>
+      <li><span class="k">Web</span><a href="https://nodalworks.se/" target="_blank" rel="noopener">nodalworks.se</a></li>
+      <li><span class="k">LinkedIn</span><a href="https://www.linkedin.com/in/phd-cohen-urban-data/" target="_blank" rel="noopener">Jonathan Cohen · Urban Data</a></li>
+      <li><span class="k">ORCID</span><a href="https://orcid.org/0000-0001-5252-6504" target="_blank" rel="noopener">0000-0001-5252-6504</a></li>
+    </ul>
+    <a class="about-coffee" href="https://www.buymeacoffee.com/RxCUuV5" target="_blank" rel="noopener">☕ <span class="only-es">Invitame un café</span><span class="only-en">Buy me a coffee</span></a>
+  </dialog>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
   <script type="module" src="js/app.js"></script>
+  <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="RxCUuV5" data-description="Support me on Buy me a coffee!" data-message="" data-color="#26B0A1" data-position="Left" data-x_margin="18" data-y_margin="18"></script>
 </body>
 </html>
